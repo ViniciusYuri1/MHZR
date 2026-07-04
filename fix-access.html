@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Corrigindo banco de dados — GestãoTask</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #f7f5ef; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    .card { background: #fff; border-radius: 16px; padding: 40px; max-width: 460px; width: 90%; box-shadow: 0 4px 24px rgba(0,0,0,.10); text-align: center; }
+    .icon { font-size: 48px; margin-bottom: 16px; }
+    h2 { font-size: 1.35rem; margin-bottom: 10px; color: #1b1815; }
+    p  { color: #6b6560; font-size: 0.9rem; line-height: 1.6; margin-bottom: 20px; }
+    .log { background: #f0ece6; border-radius: 8px; padding: 14px 16px; text-align: left; font-size: 13px; color: #444; margin-bottom: 24px; line-height: 2; }
+    .ok  { color: #3a8c5c; font-weight: 600; }
+    .upd { color: #b06a1a; font-weight: 600; }
+    .err { color: #c1543d; font-weight: 600; }
+    a.btn { display: inline-block; background: #cc785c; color: #fff; text-decoration: none;
+            padding: 12px 32px; border-radius: 10px; font-weight: 700; font-size: 1rem;
+            transition: background .2s; }
+    a.btn:hover { background: #b5664c; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="icon">🔧</div>
+  <h2>Correção de Credenciais</h2>
+  <p>Esta página garante que todos os logins estejam corretos no banco de dados local do navegador, sem apagar tarefas ou outras configurações.</p>
+  <div class="log" id="log">Processando...</div>
+  <a class="btn" href="index.html" id="btn" style="display:none;">Ir para o Login →</a>
+</div>
+
+<script>
+(function () {
+  var KEY = 'sgt_database_v1';
+  var log = document.getElementById('log');
+  var btn = document.getElementById('btn');
+  var lines = [];
+
+  /* Todos os usuários que o sistema deve ter com as credenciais corretas */
+  var ALL_USERS = [
+    /* Admin e funcionários */
+    { id:'user_1',   name:'Murillo',           email:'murillo@empresa.com', password:'admin123',   role:'admin',    team:'team_1', position:'Administrador',        avatar:'MU', permissions:['all'],          performance:95, companyId:null },
+    { id:'user_2',   name:'Gustavo',            email:'gustavo@empresa.com', password:'123456',     role:'employee', team:'team_1', position:'Desenvolvedor',         avatar:'GU', permissions:['tasks:own'],    performance:88, companyId:null },
+    { id:'user_3',   name:'Larissa',            email:'larissa@empresa.com', password:'123456',     role:'employee', team:'team_1', position:'Designer & Marketing',  avatar:'LA', permissions:['tasks:own'],    performance:90, companyId:null },
+    /* Portal de empresas */
+    { id:'user_co1', name:'Empresa Alpha Ltda', email:'acesso@alpha.com.br', password:'alpha@2026', role:'company',  team:null,     position:'Portal Empresa',        avatar:'AL', permissions:['boletos:own'],  performance:0,  companyId:'co_1' },
+    { id:'user_co2', name:'Beta Soluções ME',   email:'acesso@beta.com.br',  password:'beta@2026',  role:'company',  team:null,     position:'Portal Empresa',        avatar:'BS', permissions:['boletos:own'],  performance:0,  companyId:'co_2' },
+    { id:'user_co3', name:'Gama Tecnologia SA', email:'acesso@gama.com.br',  password:'gama@2026',  role:'company',  team:null,     position:'Portal Empresa',        avatar:'GT', permissions:['boletos:own'],  performance:0,  companyId:'co_3' }
+  ];
+
+  try {
+    var raw = localStorage.getItem(KEY);
+
+    if (!raw) {
+      /* Banco não existe: cria do zero com todos os usuários */
+      var freshDb = {
+        users: ALL_USERS.map(function(u) { return Object.assign({ status:'offline' }, u); }),
+        teams: [{ id:'team_1', name:'Equipe Principal', lead:'user_1', color:'#cc785c' }],
+        tasks: [], activities: [], boletos: [],
+        companies: [
+          { id:'co_1', name:'Empresa Alpha Ltda',  cnpj:'12.345.678/0001-90', contact:'João Silva',  email:'joao@alpha.com.br',  phone:'(11) 99999-0001', status:'ativo', since:'2024-01', contractText:'', contractSignedAt:null, contractSignedBy:null },
+          { id:'co_2', name:'Beta Soluções ME',    cnpj:'98.765.432/0001-10', contact:'Maria Souza', email:'maria@beta.com.br',   phone:'(21) 98888-0002', status:'ativo', since:'2024-03', contractText:'', contractSignedAt:null, contractSignedBy:null },
+          { id:'co_3', name:'Gama Tecnologia SA',  cnpj:'11.222.333/0001-44', contact:'Pedro Lima',  email:'pedro@gama.com.br',   phone:'(31) 97777-0003', status:'ativo', since:'2025-06', contractText:'', contractSignedAt:null, contractSignedBy:null }
+        ],
+        settings: { companyName:'Minha Empresa', theme:'light', notifications:{ email:true, push:true, deadlineReminder:true, dailySummary:false } },
+        meta: { version:1, schemaVersion:3, lastSync:null }
+      };
+      localStorage.setItem(KEY, JSON.stringify(freshDb));
+      lines.push('<span class="ok">✓ Banco criado do zero com todos os usuários.</span>');
+
+    } else {
+      var db = JSON.parse(raw);
+
+      ALL_USERS.forEach(function(u) {
+        var idx = db.users.findIndex(function(x) { return x.id === u.id; });
+
+        if (idx >= 0) {
+          /* Garante email, senha, role e companyId corretos — preserva o restante */
+          var changed = false;
+          if (db.users[idx].email    !== u.email)    { db.users[idx].email    = u.email;    changed = true; }
+          if (db.users[idx].password !== u.password) { db.users[idx].password = u.password; changed = true; }
+          if (db.users[idx].role     !== u.role)     { db.users[idx].role     = u.role;     changed = true; }
+          if (u.companyId && db.users[idx].companyId !== u.companyId) { db.users[idx].companyId = u.companyId; changed = true; }
+
+          lines.push(changed
+            ? '<span class="upd">↺ Credenciais corrigidas: ' + u.name + '</span>'
+            : '<span class="ok">✓ OK: ' + u.name + '</span>');
+
+        } else {
+          /* Usuário não encontrado: adiciona */
+          db.users.push(Object.assign({ status:'offline' }, u));
+          lines.push('<span class="ok">+ Adicionado: ' + u.name + '</span>');
+        }
+      });
+
+      if (!db.meta) db.meta = {};
+      db.meta.schemaVersion = 2;
+      localStorage.setItem(KEY, JSON.stringify(db));
+      lines.push('<br><strong>✅ Banco atualizado com sucesso!</strong>');
+    }
+
+  } catch (e) {
+    lines.push('<span class="err">❌ Erro: ' + e.message + '</span>');
+    lines.push('<span class="err">Tente apagar os dados do site pelo navegador e acesse o login novamente.</span>');
+  }
+
+  log.innerHTML = lines.join('<br>');
+  btn.style.display = 'inline-block';
+})();
+</script>
+</body>
+</html>

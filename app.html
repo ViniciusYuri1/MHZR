@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sistema de Gestão de Tarefas</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23cc785c' d='M12 0c0 6.5 1 10.5 12 12-11 1.5-12 5.5-12 12 0-6.5-1-10.5-12-12 11-1.5 12-5.5 12-12z'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+
+  <div class="app-shell">
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <span class="brand-mark">
+          <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12 0c0 6.5 1 10.5 12 12-11 1.5-12 5.5-12 12 0-6.5-1-10.5-12-12 11-1.5 12-5.5 12-12z"/></svg>
+        </span>
+        <span class="brand-name">GestãoTask</span>
+      </div>
+
+      <nav class="sidebar-nav" id="sidebar-nav">
+        <!-- Itens renderizados via app.js conforme o perfil (RBAC) -->
+      </nav>
+
+      <div class="sidebar-footer">
+        <button class="collapse-btn" id="collapse-btn">
+          <span id="collapse-icon">⟨⟨</span> <span id="collapse-text">Recolher menu</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Área principal -->
+    <div class="main-area">
+      <header class="topbar">
+        <div class="flex items-center gap-3">
+          <button class="icon-btn" id="mobile-toggle" title="Menu" style="display:none;">☰</button>
+          <div class="topbar-search">
+            <span>🔎</span>
+            <input type="text" id="global-search" placeholder="Buscar tarefas, pessoas..." />
+          </div>
+        </div>
+
+        <div class="topbar-actions">
+          <button class="icon-btn" id="theme-toggle" title="Alternar tema">🌙</button>
+
+          <div style="position:relative;">
+            <button class="icon-btn" id="notif-btn" title="Notificações">
+              🔔<span class="dot-badge" id="notif-dot"></span>
+            </button>
+            <div class="dropdown-panel notif-panel" id="notif-panel"></div>
+          </div>
+
+          <div style="position:relative;">
+            <div class="user-menu-trigger" id="user-menu-trigger">
+              <div class="avatar avatar-sm" id="user-avatar">--</div>
+              <div>
+                <div class="user-name" id="user-name">—</div>
+                <div class="user-role" id="user-role">—</div>
+              </div>
+            </div>
+            <div class="dropdown-panel" id="user-panel">
+              <div class="dropdown-item" data-route="settings">⚙️ Configurações</div>
+              <div class="dropdown-item" data-route="settings">👤 Meu Perfil</div>
+              <div class="dropdown-divider"></div>
+              <div class="dropdown-item" id="logout-btn">🚪 Sair</div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="view-content fade-in" id="view-content">
+        <!-- Conteúdo da tela atual renderizado via JS -->
+      </main>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <!-- SheetJS para export/import em Excel (.xlsx) -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+  <!-- jsPDF para geração de relatórios em PDF -->
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
+  <script src="js/data.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/views/dashboard.js"></script>
+  <script src="js/views/tasks.js"></script>
+  <script src="js/views/kanban.js"></script>
+  <script src="js/views/team.js"></script>
+  <script src="js/views/financial.js"></script>
+  <script src="js/views/portal.js"></script>
+  <script src="js/views/calendar.js"></script>
+  <script src="js/views/reports.js"></script>
+  <script src="js/views/settings.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
