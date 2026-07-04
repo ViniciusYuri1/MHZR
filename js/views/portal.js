@@ -53,7 +53,22 @@
   /* ================================================================= */
 
   function renderContractScreen(container, ctx, company) {
-    const initials = company.name.split(" ").slice(0, 2).map((p) => p[0]).join("").toUpperCase();
+    const initials  = company.name.split(" ").slice(0, 2).map((p) => p[0]).join("").toUpperCase();
+    const hasFile   = !!(company.contractFile && company.contractFile.data);
+    const hasText   = !!(company.contractText && company.contractText.trim());
+
+    const fileBlock = hasFile ? `
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--bg-soft,#f9f7f3);border:1px solid var(--border-color);border-radius:10px;margin-bottom:20px;">
+        <span style="font-size:22px;">📎</span>
+        <div style="flex:1;">
+          <div style="font-weight:600;font-size:14px;">${UI.escapeHtml(company.contractFile.name)}</div>
+          <div class="text-sm text-muted">Arquivo do contrato em anexo</div>
+        </div>
+        <button class="btn btn-primary btn-sm" id="btn-open-file">Abrir contrato</button>
+      </div>` : "";
+
+    const textBlock = hasText ? `
+      <div style="background:var(--bg-soft,#f9f7f3);border:1px solid var(--border-color);border-radius:8px;padding:24px;max-height:340px;overflow-y:auto;font-size:14px;line-height:1.9;white-space:pre-wrap;font-family:inherit;margin-bottom:24px;">${UI.escapeHtml(company.contractText)}</div>` : "";
 
     container.innerHTML = `
       <div style="max-width:820px;margin:0 auto;">
@@ -80,7 +95,8 @@
             <h3 class="card-title">📄 Contrato de Prestação de Serviços</h3>
           </div>
           <div class="card-pad">
-            <div id="contract-body" style="background:var(--bg-soft,#f9f7f3);border:1px solid var(--border-color);border-radius:8px;padding:24px;max-height:380px;overflow-y:auto;font-size:14px;line-height:1.9;white-space:pre-wrap;font-family:inherit;margin-bottom:24px;">${UI.escapeHtml(company.contractText)}</div>
+            ${fileBlock}
+            ${textBlock}
 
             <div class="form-group">
               <label class="form-label" for="sign-name">✍️ Assinatura digital — Digite seu nome completo *</label>
@@ -90,7 +106,7 @@
 
             <label class="checkbox-row" style="margin:18px 0 24px;font-size:14px;align-items:flex-start;gap:10px;">
               <input type="checkbox" id="sign-agree" style="margin-top:3px;flex-shrink:0;" />
-              <span>Li e estou de acordo com todos os termos e condições do Contrato de Prestação de Serviços acima, reconhecendo este ato como uma assinatura eletrônica válida.</span>
+              <span>Li e estou de acordo com todos os termos e condições do Contrato de Prestação de Serviços${hasFile ? " (incluindo o arquivo anexado)" : ""}, reconhecendo este ato como uma assinatura eletrônica válida.</span>
             </label>
 
             <button class="btn btn-primary" id="btn-sign" style="width:100%;padding:14px 0;font-size:16px;font-weight:700;" disabled>
@@ -103,6 +119,11 @@
           Dúvidas sobre o contrato? Entre em contato com a equipe responsável pela sua conta.
         </p>
       </div>`;
+
+    const openFileBtn = container.querySelector("#btn-open-file");
+    if (openFileBtn) {
+      openFileBtn.addEventListener("click", () => UI.openAttachment(company.contractFile));
+    }
 
     const nameInput  = container.querySelector("#sign-name");
     const agreeCheck = container.querySelector("#sign-agree");
@@ -130,13 +151,22 @@
   /* ================================================================= */
 
   function openContractViewModal(company) {
+    const hasFile = !!(company.contractFile && company.contractFile.data);
+    const hasText = !!(company.contractText && company.contractText.trim());
+
     const html = `
       <div class="modal-header">
         <h3>📄 Contrato — ${UI.escapeHtml(company.name)}</h3>
         <button class="modal-close" id="cv-close">✕</button>
       </div>
       <div class="modal-body">
-        <div style="background:var(--bg-soft,#f9f7f3);border:1px solid var(--border-color);border-radius:8px;padding:20px;max-height:380px;overflow-y:auto;font-size:13px;line-height:1.8;white-space:pre-wrap;margin-bottom:16px;">${UI.escapeHtml(company.contractText || "")}</div>
+        ${hasFile ? `
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg-soft,#f9f7f3);border:1px solid var(--border-color);border-radius:8px;margin-bottom:14px;">
+          <span style="font-size:20px;">📎</span>
+          <span class="text-sm" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${UI.escapeHtml(company.contractFile.name)}</span>
+          <button class="btn btn-primary btn-sm" id="cv-open-file">Abrir arquivo</button>
+        </div>` : ""}
+        ${hasText ? `<div style="background:var(--bg-soft,#f9f7f3);border:1px solid var(--border-color);border-radius:8px;padding:20px;max-height:320px;overflow-y:auto;font-size:13px;line-height:1.8;white-space:pre-wrap;margin-bottom:14px;">${UI.escapeHtml(company.contractText)}</div>` : ""}
         <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--color-success-light,#dcfce7);border-radius:8px;font-size:13px;font-weight:600;color:var(--color-success,#16a34a);">
           ✅ Assinado por <strong>${UI.escapeHtml(company.contractSignedBy || "")}</strong> em ${fmtDateTime(company.contractSignedAt)}
         </div>
@@ -148,6 +178,11 @@
     const overlay = UI.showModal(html);
     overlay.querySelector("#cv-close").addEventListener("click", UI.hideModal);
     overlay.querySelector("#cv-ok").addEventListener("click", UI.hideModal);
+
+    const openFileBtn = overlay.querySelector("#cv-open-file");
+    if (openFileBtn) {
+      openFileBtn.addEventListener("click", () => UI.openAttachment(company.contractFile));
+    }
   }
 
   /* ================================================================= */

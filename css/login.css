@@ -252,6 +252,21 @@
 
 @media (max-width: 760px) {
   .login-aside { display: none; }
-  .login-shell { min-height: auto; }
-  .login-form-wrap { padding: 40px 28px; }
+  .login-shell { min-height: auto; border-radius: 20px; }
+  .login-form-wrap { padding: 36px 28px; }
+}
+
+@media (max-width: 500px) {
+  .login-page { padding: 0; align-items: flex-end; }
+  .login-shell {
+    border-radius: 24px 24px 0 0;
+    max-width: 100%;
+    min-height: 85vh;
+  }
+  .login-form-wrap { padding: 32px 22px 36px; }
+  .login-form-wrap h1 { font-size: 22px; }
+
+  /* Demo accounts: 2 por linha no mobile */
+  .demo-accounts { flex-wrap: wrap; }
+  .demo-account-btn { flex: 1 1 calc(50% - 5px); min-width: 0; }
 }

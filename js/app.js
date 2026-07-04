@@ -48,7 +48,10 @@
     });
     sidebarNav.innerHTML = html;
     sidebarNav.querySelectorAll(".nav-item").forEach((el) => {
-      el.addEventListener("click", () => navigate(el.dataset.route));
+      el.addEventListener("click", () => {
+        navigate(el.dataset.route);
+        if (window.innerWidth <= 900) closeMobileSidebar();
+      });
     });
   }
 
@@ -222,9 +225,19 @@
     applyCollapsedState();
   });
 
+  const sidebarOverlay = document.getElementById("sidebar-overlay");
+
+  function closeMobileSidebar() {
+    sidebar.classList.remove("mobile-open");
+    sidebarOverlay.classList.remove("active");
+  }
+
   document.getElementById("mobile-toggle").addEventListener("click", () => {
-    sidebar.classList.toggle("mobile-open");
+    const isOpen = sidebar.classList.toggle("mobile-open");
+    sidebarOverlay.classList.toggle("active", isOpen);
   });
+
+  sidebarOverlay.addEventListener("click", closeMobileSidebar);
 
   /* ------------------------------------------------------------------ */
   /* Busca global → leva para Tarefas com o termo aplicado               */

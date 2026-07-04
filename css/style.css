@@ -474,6 +474,44 @@ table.data-table tbody tr:hover {
 }
 
 /* -------------------------------------------------------------------- */
+/* Overlay da sidebar (mobile)                                          */
+/* -------------------------------------------------------------------- */
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(38, 31, 24, 0.52);
+  z-index: 199;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+.sidebar-overlay.active {
+  display: block;
+  animation: fadeIn 0.22s ease;
+}
+
+/* -------------------------------------------------------------------- */
+/* Responsivo — Modal como bottom sheet e toast em mobile               */
+/* -------------------------------------------------------------------- */
+
+@media (max-width: 600px) {
+  /* Modal sobe da base da tela */
+  .modal-overlay { align-items: flex-end; }
+  .modal-box {
+    max-width: 100% !important;
+    border-radius: 20px 20px 0 0;
+    max-height: 92vh;
+    transform: translateY(30px) scale(1) !important;
+  }
+  .modal-overlay.open .modal-box { transform: translateY(0) scale(1) !important; }
+
+  /* Toast ocupa largura total */
+  #toast-container { left: 10px; right: 10px; bottom: 10px; }
+  .toast { min-width: unset; width: 100%; }
+}
+
+/* -------------------------------------------------------------------- */
 /* Animações utilitárias                                                */
 /* -------------------------------------------------------------------- */
 

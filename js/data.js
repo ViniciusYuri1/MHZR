@@ -40,9 +40,9 @@
 
   function seedCompanies() {
     return [
-      { id: "co_1", name: "Empresa Alpha Ltda",  cnpj: "12.345.678/0001-90", contact: "João Silva",  email: "joao@alpha.com.br",  phone: "(11) 99999-0001", status: "ativo", since: "2024-01", contractText: "", contractSignedAt: null, contractSignedBy: null },
-      { id: "co_2", name: "Beta Soluções ME",    cnpj: "98.765.432/0001-10", contact: "Maria Souza", email: "maria@beta.com.br",   phone: "(21) 98888-0002", status: "ativo", since: "2024-03", contractText: "", contractSignedAt: null, contractSignedBy: null },
-      { id: "co_3", name: "Gama Tecnologia SA",  cnpj: "11.222.333/0001-44", contact: "Pedro Lima",  email: "pedro@gama.com.br",   phone: "(31) 97777-0003", status: "ativo", since: "2025-06", contractText: "", contractSignedAt: null, contractSignedBy: null }
+      { id: "co_1", name: "Empresa Alpha Ltda",  cnpj: "12.345.678/0001-90", contact: "João Silva",  email: "joao@alpha.com.br",  phone: "(11) 99999-0001", status: "ativo", since: "2024-01", contractText: "", contractFile: null, contractSignedAt: null, contractSignedBy: null },
+      { id: "co_2", name: "Beta Soluções ME",    cnpj: "98.765.432/0001-10", contact: "Maria Souza", email: "maria@beta.com.br",   phone: "(21) 98888-0002", status: "ativo", since: "2024-03", contractText: "", contractFile: null, contractSignedAt: null, contractSignedBy: null },
+      { id: "co_3", name: "Gama Tecnologia SA",  cnpj: "11.222.333/0001-44", contact: "Pedro Lima",  email: "pedro@gama.com.br",   phone: "(31) 97777-0003", status: "ativo", since: "2025-06", contractText: "", contractFile: null, contractSignedAt: null, contractSignedBy: null }
     ];
   }
 
@@ -388,6 +388,7 @@
       if (schemaVer3 < 3) {
         (parsed.companies || []).forEach(function(co) {
           if (!('contractText'     in co)) co.contractText     = "";
+          if (!('contractFile'     in co)) co.contractFile     = null;
           if (!('contractSignedAt' in co)) co.contractSignedAt = null;
           if (!('contractSignedBy' in co)) co.contractSignedBy = null;
         });

@@ -430,8 +430,8 @@
   }
 
   function openContractModal(co, onSaved) {
-    const signed    = co.contractSignedAt;
-    const hasCtr    = co.contractText && co.contractText.trim();
+    const signed = co.contractSignedAt;
+    const hasCtr = (co.contractText && co.contractText.trim()) || co.contractFile;
 
     function fmtDT(iso) {
       if (!iso) return "";
@@ -442,10 +442,19 @@
     const signatureInfo = signed
       ? `<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--color-success-light,#dcfce7);border-radius:8px;font-size:13px;font-weight:600;color:var(--color-success,#16a34a);margin-bottom:14px;">
            ✅ Assinado por <strong>${UI.escapeHtml(co.contractSignedBy || "")}</strong> em ${fmtDT(co.contractSignedAt)}
+           ${signed ? `<button class="btn btn-ghost btn-sm" id="ct-reset" style="margin-left:auto;color:var(--color-danger);font-weight:600;">🔄 Resetar assinatura</button>` : ""}
          </div>`
       : (hasCtr
           ? `<div style="padding:8px 14px;background:var(--color-warning-light,#fff8e1);border-radius:8px;font-size:13px;font-weight:600;color:var(--color-warning,#b45309);margin-bottom:14px;">📝 Aguardando assinatura da empresa</div>`
           : `<div style="padding:8px 14px;background:var(--bg-surface);border:1px dashed var(--border-color);border-radius:8px;font-size:13px;color:var(--text-muted);margin-bottom:14px;">📄 Nenhum contrato cadastrado</div>`);
+
+    const fileRow = co.contractFile ? `
+      <div id="ct-file-current" style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg-soft,var(--bg-surface));border:1px solid var(--border-color);border-radius:8px;margin-bottom:8px;">
+        <span>📎</span>
+        <span class="text-sm" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${UI.escapeHtml(co.contractFile.name)}</span>
+        <button type="button" class="btn btn-ghost btn-sm" id="ct-view-file" title="Visualizar">👁️</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="ct-remove-file" title="Remover arquivo" style="color:var(--color-danger);">✕</button>
+      </div>` : "";
 
     const html = `
       <div class="modal-header">
@@ -453,16 +462,20 @@
         <button class="modal-close" id="ct-close">✕</button>
       </div>
       <div class="modal-body">
-        <p class="text-sm text-muted" style="margin-bottom:14px;">Edite o texto do contrato desta empresa. Quando salvo, a empresa precisará assinar antes de acessar os boletos.</p>
+        <p class="text-sm text-muted" style="margin-bottom:14px;">Configure o contrato desta empresa. Pode anexar um arquivo PDF ou escrever o texto. A empresa precisará assinar antes de acessar os boletos.</p>
         ${signatureInfo}
+
         <div class="form-group">
-          <label class="form-label">Texto do contrato</label>
-          <textarea class="form-control" id="ct-text" rows="10" style="resize:vertical;font-size:13px;line-height:1.7;" placeholder="Cole ou escreva aqui o texto completo do contrato de prestação de serviços...">${UI.escapeHtml(co.contractText || "")}</textarea>
+          <label class="form-label">📎 Arquivo do contrato (PDF, PNG ou JPG — máx. 5 MB)</label>
+          ${fileRow}
+          <input type="file" class="form-control" id="ct-file" accept=".pdf,.png,.jpg,.jpeg" style="padding:6px;" />
+          ${co.contractFile ? `<div class="text-sm text-muted" style="margin-top:4px;">Selecione um novo arquivo para substituir o atual.</div>` : ""}
         </div>
-        ${signed ? `
-        <div style="margin-top:6px;">
-          <button class="btn btn-ghost btn-sm" id="ct-reset" style="color:var(--color-danger);">🔄 Resetar assinatura (exigir nova assinatura)</button>
-        </div>` : ""}
+
+        <div class="form-group">
+          <label class="form-label">Texto complementar do contrato (opcional)</label>
+          <textarea class="form-control" id="ct-text" rows="7" style="resize:vertical;font-size:13px;line-height:1.7;" placeholder="Cole ou escreva aqui o texto do contrato (pode usar junto com o arquivo acima)...">${UI.escapeHtml(co.contractText || "")}</textarea>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" id="ct-cancel">Cancelar</button>
@@ -485,12 +498,59 @@
       });
     }
 
+    const viewFileBtn = overlay.querySelector("#ct-view-file");
+    if (viewFileBtn) {
+      viewFileBtn.addEventListener("click", () => UI.openAttachment(co.contractFile));
+    }
+
+    let removeFile = false;
+    const removeFileBtn = overlay.querySelector("#ct-remove-file");
+    if (removeFileBtn) {
+      removeFileBtn.addEventListener("click", () => {
+        removeFile = true;
+        overlay.querySelector("#ct-file-current").style.display = "none";
+        UI.toast("Arquivo será removido ao salvar.", "success");
+      });
+    }
+
     overlay.querySelector("#ct-save").addEventListener("click", () => {
-      const text = overlay.querySelector("#ct-text").value;
-      DB.Companies.update(co.id, { contractText: text });
-      UI.toast("Contrato salvo com sucesso.", "success");
-      UI.hideModal();
-      if (onSaved) onSaved();
+      const text     = overlay.querySelector("#ct-text").value;
+      const fileInput = overlay.querySelector("#ct-file");
+      const file      = fileInput && fileInput.files[0];
+
+      const patch = { contractText: text };
+      if (removeFile) patch.contractFile = null;
+
+      function doSave(finalPatch) {
+        try {
+          DB.Companies.update(co.id, finalPatch);
+          UI.toast("Contrato salvo com sucesso.", "success");
+          UI.hideModal();
+          if (onSaved) onSaved();
+        } catch (err) {
+          if (err.name === "QuotaExceededError") {
+            UI.toast("Arquivo muito grande para o armazenamento. Reduza o tamanho e tente novamente.", "error");
+          } else {
+            UI.toast("Erro ao salvar o contrato.", "error");
+          }
+        }
+      }
+
+      if (file) {
+        if (file.size > 5 * 1024 * 1024) {
+          UI.toast("Arquivo muito grande. O limite é 5 MB.", "error");
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          patch.contractFile = { name: file.name, type: file.type, data: e.target.result };
+          doSave(patch);
+        };
+        reader.onerror = () => UI.toast("Não foi possível ler o arquivo.", "error");
+        reader.readAsDataURL(file);
+      } else {
+        doSave(patch);
+      }
     });
   }
 
