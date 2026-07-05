@@ -18,12 +18,15 @@
 
   const PRIORITY_LABELS = { baixa: "Baixa", media: "Média", alta: "Alta", urgente: "Urgente" };
 
-  function cardHtml(task) {
+  function cardHtml(task, isAdmin) {
     const assignee = DB.Users.get(task.assignee);
     const overdue = DB.Tasks.isOverdue(task);
     return `
       <div class="kanban-card" draggable="true" data-id="${task.id}">
-        <div class="kc-title">${UI.escapeHtml(task.title)}</div>
+        <div class="kc-title-row">
+          <span class="kc-title">${UI.escapeHtml(task.title)}</span>
+          ${isAdmin ? `<button class="kc-delete-btn" data-delete-id="${task.id}" title="Excluir tarefa">🗑️</button>` : ""}
+        </div>
         <div class="kc-tags">
           ${(task.tags || []).slice(0, 3).map((t) => `<span class="tag-pill">${UI.escapeHtml(t)}</span>`).join("")}
         </div>
@@ -61,7 +64,7 @@
               <span class="kanban-count">${colTasks.length}</span>
             </div>
             <div class="kanban-cards" data-status="${col.status}">
-              ${colTasks.map(cardHtml).join("")}
+              ${colTasks.map((t) => cardHtml(t, ctx.user.role === "admin")).join("")}
             </div>
           </div>`;
         }).join("")}
@@ -78,6 +81,19 @@
         window.Views.openTaskModal(ctx, null, () => render(container, ctx));
       });
     }
+
+    container.querySelectorAll(".kc-delete-btn").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const taskId = btn.dataset.deleteId;
+        const task = DB.Tasks.get(taskId);
+        if (!task) return;
+        if (!confirm(`Excluir a tarefa "${task.title}"?\n\nEsta ação não pode ser desfeita.`)) return;
+        DB.Tasks.remove(taskId);
+        UI.toast("Tarefa excluída.", "success");
+        render(container, ctx);
+      });
+    });
 
     container.querySelectorAll(".kanban-card").forEach((card) => {
       card.addEventListener("dragstart", (e) => {

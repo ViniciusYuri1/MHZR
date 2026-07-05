@@ -7,7 +7,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle at 20% 20%, #cc785c 0%, #2b2a27 55%, #1b1815 100%);
+  background: radial-gradient(circle at 20% 20%, #4c1d95 0%, #0f0b1e 55%, #09080f 100%);
   padding: 24px;
   position: relative;
   overflow: hidden;
@@ -24,14 +24,14 @@
 .login-page::before {
   width: 380px;
   height: 380px;
-  background: #e8a589;
+  background: #a78bfa;
   top: -120px;
   left: -100px;
 }
 .login-page::after {
   width: 320px;
   height: 320px;
-  background: #d9a441;
+  background: #6d28d9;
   bottom: -100px;
   right: -80px;
 }
@@ -51,7 +51,7 @@
 
 .login-aside {
   flex: 1.1;
-  background: linear-gradient(160deg, #b5664c, #cc785c 45%, #e0a080);
+  background: linear-gradient(160deg, #4c1d95, #7c3aed 45%, #a78bfa);
   color: #fff;
   padding: 48px 40px;
   display: flex;

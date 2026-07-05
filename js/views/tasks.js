@@ -115,7 +115,10 @@
             <tr data-id="${t.id}" class="task-row" style="cursor:pointer;">
               <td>
                 <div style="font-weight:700;">${UI.escapeHtml(t.title)}</div>
-                <div class="text-sm text-muted">${(t.tags || []).slice(0, 3).map((tag) => `<span class="tag-pill">${UI.escapeHtml(tag)}</span>`).join(" ")}</div>
+                <div class="text-sm text-muted" style="margin-top:3px;">
+                  ${(t.tags || []).slice(0, 2).map((tag) => `<span class="tag-pill">${UI.escapeHtml(tag)}</span>`).join(" ")}
+                  ${t.companyId ? `<span class="badge badge-em_andamento" style="font-size:11px;">🏢 ${UI.escapeHtml((DB.Companies.get(t.companyId) || {}).name || "")}</span>` : ""}
+                </div>
               </td>
               <td>
                 <div class="flex items-center gap-2">
@@ -233,7 +236,8 @@
     const isAdmin = ctx.user.role === "admin";
     const task = taskId ? DB.Tasks.get(taskId) : null;
     const isNew = !task;
-    const users = DB.Users.list();
+    const users = DB.Users.list().filter((u) => u.role !== "company");
+    const companies = DB.Companies.list();
     const canEditFull = isAdmin; // admin pode editar tudo; funcionário só status/checklist/comentários/horas
 
     let draftChecklist = task ? JSON.parse(JSON.stringify(task.checklist || [])) : [];
@@ -348,6 +352,20 @@
             <label class="form-label">Tags (separadas por vírgula)</label>
             <input type="text" class="form-control" id="tm-tags" value="${task ? (task.tags || []).join(", ") : ""}" ${canEditFull ? "" : "readonly"} />
           </div>
+
+          ${canEditFull && companies.length ? `
+          <div class="form-group">
+            <label class="form-label">🏢 Empresa vinculada (opcional)</label>
+            <select class="form-control" id="tm-company">
+              <option value="">— Nenhuma empresa —</option>
+              ${companies.map((c) => `<option value="${c.id}" ${task && task.companyId === c.id ? "selected" : ""}>${UI.escapeHtml(c.name)}</option>`).join("")}
+            </select>
+            <div class="text-sm text-muted" style="margin-top:4px;">A empresa selecionada poderá acompanhar esta tarefa no portal.</div>
+          </div>` : (task && task.companyId ? `
+          <div class="form-group">
+            <label class="form-label">🏢 Empresa vinculada</label>
+            <div style="padding:9px 14px;background:var(--bg-surface-alt);border:1px solid var(--border-color);border-radius:var(--radius-md);font-size:14px;">${UI.escapeHtml((companies.find(c => c.id === task.companyId) || {}).name || "—")}</div>
+          </div>` : "")}
 
           <div class="form-group">
             <label class="form-label">Checklist</label>
@@ -498,7 +516,8 @@
             dueDate: overlay.querySelector("#tm-due").value,
             tags: overlay.querySelector("#tm-tags").value.split(",").map((s) => s.trim()).filter(Boolean),
             timeLogged: Number(overlay.querySelector("#tm-hours").value) || 0,
-            checklist: draftChecklist
+            checklist: draftChecklist,
+            companyId: (overlay.querySelector("#tm-company") && overlay.querySelector("#tm-company").value) || null
           }
         : {
             status: overlay.querySelector("#tm-status").value,

@@ -106,17 +106,18 @@
     return `
       <div class="card">
         <div class="card-header"><h3 class="card-title">Tarefas por prioridade</h3></div>
-        <div class="card-pad flex items-center gap-4" style="flex-wrap:wrap;">
-          <div style="width:130px; height:130px; border-radius:50%; background:conic-gradient(${stops}); flex-shrink:0; position:relative;">
-            <div style="position:absolute; inset:18px; background:var(--bg-surface); border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:18px;">${tasks.length}</div>
+        <div class="card-pad flex items-center gap-5" style="padding-top:24px;padding-bottom:24px;">
+          <div style="width:150px;height:150px;border-radius:50%;background:conic-gradient(${stops});flex-shrink:0;position:relative;">
+            <div style="position:absolute;inset:20px;background:var(--bg-surface);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;">${tasks.length}</div>
           </div>
-          <div class="flex-col gap-2">
-            ${priorities
-              .map((p) => {
+          <div style="display:grid;grid-template-columns:12px auto 24px;align-items:center;row-gap:11px;column-gap:8px;">
+            ${priorities.map((p) => {
                 const count = tasks.filter((t) => t.priority === p).length;
-                return `<div class="flex items-center gap-2 text-sm"><span class="dot" style="background:${PRIORITY_COLORS[p]};"></span> ${PRIORITY_LABELS[p]} <strong style="margin-left:auto;">${count}</strong></div>`;
-              })
-              .join("")}
+                return `
+                  <span style="width:11px;height:11px;border-radius:50%;background:${PRIORITY_COLORS[p]};display:block;"></span>
+                  <span style="font-size:13px;color:var(--text-secondary);white-space:nowrap;">${PRIORITY_LABELS[p]}</span>
+                  <strong style="font-size:13px;text-align:right;">${count}</strong>`;
+              }).join("")}
           </div>
         </div>
       </div>`;
@@ -234,11 +235,12 @@
         <div class="flex-col gap-4">
           ${miniCalendarHtml()}
           ${priorityDonutHtml(ctx)}
-          <div class="card">
-            <div class="card-header"><h3 class="card-title">Atividades recentes</h3></div>
-            <div class="card-pad" style="max-height:280px; overflow-y:auto;">${activitiesHtml()}</div>
-          </div>
         </div>
+      </div>
+
+      <div class="card" style="margin-top:18px;">
+        <div class="card-header"><h3 class="card-title">Atividades recentes</h3></div>
+        <div class="card-pad" style="max-height:320px;overflow-y:auto;">${activitiesHtml()}</div>
       </div>
     `;
 

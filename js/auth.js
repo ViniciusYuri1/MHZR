@@ -1,39 +1,50 @@
 /* ==========================================================================
-   auth.js — Lógica da tela de login
+   auth.js — Lógica da tela de login / cadastro de empresa
    ========================================================================== */
 
 (function () {
   "use strict";
 
-  // A tela de login tem identidade visual própria (cartão claro + aside
-  // ilustrado) e não acompanha o tema claro/escuro do app autenticado.
-
-  // Se já existe sessão ativa, vai direto para o app.
   if (DB.getCurrentUser()) {
     window.location.href = "app.html";
     return;
   }
 
-  const form = document.getElementById("login-form");
-  const errorBox = document.getElementById("login-error");
-  const emailInput = document.getElementById("email");
-  const passInput = document.getElementById("password");
-  const rememberInput = { checked: false }; // sessão sempre temporária
-  const submitBtn = document.getElementById("login-submit");
-  const togglePassBtn = document.getElementById("toggle-pass");
+  // ── helpers de tela ──────────────────────────────────────────────────────
+  const screenLogin    = document.getElementById("screen-login");
+  const screenRegister = document.getElementById("screen-register");
 
-  togglePassBtn.addEventListener("click", () => {
-    const isPassword = passInput.type === "password";
-    passInput.type = isPassword ? "text" : "password";
-    togglePassBtn.textContent = isPassword ? "Ocultar" : "Mostrar";
+  function showLogin() {
+    screenLogin.style.display = "";
+    screenRegister.style.display = "none";
+  }
+  function showRegister() {
+    screenLogin.style.display = "none";
+    screenRegister.style.display = "";
+  }
+
+  document.getElementById("btn-go-register").addEventListener("click", (e) => {
+    e.preventDefault();
+    showRegister();
+  });
+  document.getElementById("btn-go-login").addEventListener("click", (e) => {
+    e.preventDefault();
+    showLogin();
   });
 
-  document.querySelectorAll(".demo-account-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      emailInput.value = btn.dataset.email;
-      passInput.value = btn.dataset.pass;
-      errorBox.classList.remove("visible");
-    });
+  // ── LOGIN ────────────────────────────────────────────────────────────────
+  const form       = document.getElementById("login-form");
+  const errorBox   = document.getElementById("login-error");
+  const emailInput = document.getElementById("email");
+  const passInput  = document.getElementById("password");
+  const submitBtn  = document.getElementById("login-submit");
+  const toggleBtn  = document.getElementById("toggle-pass");
+  const rememberInput = { checked: false };
+
+  toggleBtn.addEventListener("click", () => {
+    const hide = passInput.type === "password";
+    passInput.type = hide ? "text" : "password";
+    toggleBtn.textContent = hide ? "Ocultar" : "Mostrar";
   });
 
   document.getElementById("forgot-link").addEventListener("click", (e) => {
@@ -47,7 +58,6 @@
   form.addEventListener("submit", (e) => {
     e.preventDefault();
     errorBox.classList.remove("visible");
-
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<span class="spinner"></span> Entrando...';
 
@@ -62,5 +72,92 @@
       }
       window.location.href = "app.html";
     }, 450);
+  });
+
+  // ── CADASTRO DE EMPRESA ──────────────────────────────────────────────────
+  const regForm    = document.getElementById("register-form");
+  const regError   = document.getElementById("register-error");
+  const regSubmit  = document.getElementById("register-submit");
+  const toggleRegBtn = document.getElementById("toggle-reg-pass");
+  const regPassInput = document.getElementById("reg-pass");
+
+  toggleRegBtn.addEventListener("click", () => {
+    const hide = regPassInput.type === "password";
+    regPassInput.type = hide ? "text" : "password";
+    toggleRegBtn.textContent = hide ? "Ocultar" : "Mostrar";
+  });
+
+  function showRegError(msg) {
+    regError.textContent = msg;
+    regError.classList.add("visible");
+  }
+
+  regForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    regError.classList.remove("visible");
+
+    const name  = document.getElementById("reg-name").value.trim();
+    const cnpj  = document.getElementById("reg-cnpj").value.trim();
+    const phone = document.getElementById("reg-phone").value.trim();
+    const email = document.getElementById("reg-email").value.trim();
+    const pass  = document.getElementById("reg-pass").value;
+    const pass2 = document.getElementById("reg-pass2").value;
+
+    if (!name)  return showRegError("Informe a Razão Social da empresa.");
+    if (!email) return showRegError("Informe o e-mail de acesso.");
+    if (pass.length < 6) return showRegError("A senha deve ter pelo menos 6 caracteres.");
+    if (pass !== pass2)  return showRegError("As senhas não coincidem.");
+
+    const existing = DB.Users.list().find((u) => u.email.toLowerCase() === email.toLowerCase());
+    if (existing) return showRegError("Este e-mail já está cadastrado. Faça login.");
+
+    regSubmit.disabled = true;
+    regSubmit.innerHTML = '<span class="spinner"></span> Criando acesso...';
+
+    setTimeout(() => {
+      try {
+        const co = DB.Companies.create({
+          name,
+          cnpj: cnpj || "",
+          phone: phone || "",
+          status: "ativo",
+          contractText: "",
+          contractFile: null,
+          contractSignedAt: null,
+          contractSignedBy: null,
+        });
+
+        const initials = name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+
+        DB.Users.create({
+          name,
+          email,
+          password: pass,
+          role: "company",
+          companyId: co.id,
+          team: null,
+          position: "Portal Empresa",
+          avatar: initials,
+          status: "offline",
+          permissions: ["boletos:own"],
+          performance: 0,
+        });
+
+        const result = DB.login(email, pass, false);
+        if (!result.ok) {
+          showRegError("Cadastro criado, mas não foi possível entrar automaticamente. Faça login.");
+          regSubmit.disabled = false;
+          regSubmit.textContent = "Criar acesso";
+          showLogin();
+          return;
+        }
+
+        window.location.href = "app.html";
+      } catch (err) {
+        showRegError("Erro ao criar cadastro. Tente novamente.");
+        regSubmit.disabled = false;
+        regSubmit.textContent = "Criar acesso";
+      }
+    }, 500);
   });
 })();

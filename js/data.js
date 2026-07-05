@@ -40,34 +40,19 @@
 
   function seedCompanies() {
     return [
-      { id: "co_1", name: "Empresa Alpha Ltda",  cnpj: "12.345.678/0001-90", contact: "João Silva",  email: "joao@alpha.com.br",  phone: "(11) 99999-0001", status: "ativo", since: "2024-01", contractText: "", contractFile: null, contractSignedAt: null, contractSignedBy: null },
-      { id: "co_2", name: "Beta Soluções ME",    cnpj: "98.765.432/0001-10", contact: "Maria Souza", email: "maria@beta.com.br",   phone: "(21) 98888-0002", status: "ativo", since: "2024-03", contractText: "", contractFile: null, contractSignedAt: null, contractSignedBy: null },
-      { id: "co_3", name: "Gama Tecnologia SA",  cnpj: "11.222.333/0001-44", contact: "Pedro Lima",  email: "pedro@gama.com.br",   phone: "(31) 97777-0003", status: "ativo", since: "2025-06", contractText: "", contractFile: null, contractSignedAt: null, contractSignedBy: null }
+      { id: "co_1", name: "Panobianco dos Casa",   cnpj: "", contact: "", email: "", phone: "", status: "ativo", since: "", contractText: "", contractFile: null, contractSignedAt: null, contractSignedBy: null },
+      { id: "co_2", name: "Panobianco Alvarenga",  cnpj: "", contact: "", email: "", phone: "", status: "ativo", since: "", contractText: "", contractFile: null, contractSignedAt: null, contractSignedBy: null },
+      { id: "co_3", name: "Panobianco Raposo",     cnpj: "", contact: "", email: "", phone: "", status: "ativo", since: "", contractText: "", contractFile: null, contractSignedAt: null, contractSignedBy: null },
+      { id: "co_4", name: "Panobianco Castelo",    cnpj: "", contact: "", email: "", phone: "", status: "ativo", since: "", contractText: "", contractFile: null, contractSignedAt: null, contractSignedBy: null },
+      { id: "co_5", name: "Panobianco Riberão",    cnpj: "", contact: "", email: "", phone: "", status: "ativo", since: "", contractText: "", contractFile: null, contractSignedAt: null, contractSignedBy: null },
+      { id: "co_6", name: "Power Pedal",           cnpj: "", contact: "", email: "", phone: "", status: "ativo", since: "", contractText: "", contractFile: null, contractSignedAt: null, contractSignedBy: null },
+      { id: "co_7", name: "Hype Jump",             cnpj: "", contact: "", email: "", phone: "", status: "ativo", since: "", contractText: "", contractFile: null, contractSignedAt: null, contractSignedBy: null },
+      { id: "co_8", name: "Vita Spinning",         cnpj: "", contact: "", email: "", phone: "", status: "ativo", since: "", contractText: "", contractFile: null, contractSignedAt: null, contractSignedBy: null }
     ];
   }
 
   function seedBoletos() {
-    function ym(off) {
-      const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() + off);
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    }
-    function md(off, day) { return `${ym(off)}-${String(day).padStart(2, "0")}`; }
-    const MONTHS = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
-    function ml(ymStr) { const [y, m] = ymStr.split("-"); return `${MONTHS[+m - 1]}/${y}`; }
-    return [
-      { id:"bol_1",  companyId:"co_1", description:`Mensalidade ${ml(ym(-2))}`, amount:2500, dueDate:md(-2,10), paidDate:md(-2, 9), month:ym(-2), status:"pago",    notes:"" },
-      { id:"bol_2",  companyId:"co_2", description:`Mensalidade ${ml(ym(-2))}`, amount:1800, dueDate:md(-2,15), paidDate:md(-2,14), month:ym(-2), status:"pago",    notes:"" },
-      { id:"bol_3",  companyId:"co_3", description:`Mensalidade ${ml(ym(-2))}`, amount:3200, dueDate:md(-2,20), paidDate:md(-2,19), month:ym(-2), status:"pago",    notes:"" },
-      { id:"bol_4",  companyId:"co_1", description:`Mensalidade ${ml(ym(-1))}`, amount:2500, dueDate:md(-1,10), paidDate:md(-1,12), month:ym(-1), status:"pago",    notes:"Pago com 2 dias de atraso" },
-      { id:"bol_5",  companyId:"co_2", description:`Mensalidade ${ml(ym(-1))}`, amount:1800, dueDate:md(-1,15), paidDate:null,      month:ym(-1), status:"vencido", notes:"" },
-      { id:"bol_6",  companyId:"co_3", description:`Mensalidade ${ml(ym(-1))}`, amount:3200, dueDate:md(-1,20), paidDate:md(-1,19), month:ym(-1), status:"pago",    notes:"" },
-      { id:"bol_7",  companyId:"co_1", description:`Mensalidade ${ml(ym( 0))}`, amount:2500, dueDate:md( 0,10), paidDate:md( 0, 9), month:ym( 0), status:"pago",    notes:"" },
-      { id:"bol_8",  companyId:"co_2", description:`Mensalidade ${ml(ym( 0))}`, amount:1800, dueDate:md( 0,15), paidDate:null,      month:ym( 0), status:"vencido", notes:"" },
-      { id:"bol_9",  companyId:"co_3", description:`Mensalidade ${ml(ym( 0))}`, amount:3200, dueDate:md( 0,25), paidDate:null,      month:ym( 0), status:"pendente",notes:"" },
-      { id:"bol_10", companyId:"co_1", description:`Mensalidade ${ml(ym( 1))}`, amount:2500, dueDate:md( 1,10), paidDate:null,      month:ym( 1), status:"pendente",notes:"" },
-      { id:"bol_11", companyId:"co_2", description:`Mensalidade ${ml(ym( 1))}`, amount:1800, dueDate:md( 1,15), paidDate:null,      month:ym( 1), status:"pendente",notes:"" },
-      { id:"bol_12", companyId:"co_3", description:`Mensalidade ${ml(ym( 1))}`, amount:3200, dueDate:md( 1,20), paidDate:null,      month:ym( 1), status:"pendente",notes:"" }
-    ];
+    return [];
   }
 
   /* ------------------------------------------------------------------ */
@@ -76,7 +61,7 @@
 
   function seedDatabase() {
     const teams = [
-      { id: "team_1", name: "Equipe Principal", lead: "user_1", color: "#cc785c" }
+      { id: "team_1", name: "Equipe Principal", lead: "user_1", color: "#7c3aed" }
     ];
 
     const users = [
@@ -122,10 +107,7 @@
         performance: 90,
         createdAt: todayISO(-100)
       },
-      /* Usuários do portal de empresas (acesso somente a boletos) */
-      { id:"user_co1", name:"Empresa Alpha Ltda", email:"acesso@alpha.com.br", password:"alpha@2026", role:"company", companyId:"co_1", team:null, position:"Portal Empresa", avatar:"AL", status:"offline", permissions:["boletos:own"], performance:0, createdAt:todayISO() },
-      { id:"user_co2", name:"Beta Soluções ME",   email:"acesso@beta.com.br",  password:"beta@2026",  role:"company", companyId:"co_2", team:null, position:"Portal Empresa", avatar:"BS", status:"offline", permissions:["boletos:own"], performance:0, createdAt:todayISO() },
-      { id:"user_co3", name:"Gama Tecnologia SA", email:"acesso@gama.com.br",  password:"gama@2026",  role:"company", companyId:"co_3", team:null, position:"Portal Empresa", avatar:"GT", status:"offline", permissions:["boletos:own"], performance:0, createdAt:todayISO() }
+      /* Usuários de empresa cadastrados via formulário de registro */
     ];
 
     const taskSeeds = [
@@ -339,7 +321,7 @@
     const companies = seedCompanies();
     const boletos   = seedBoletos();
 
-    return { users, teams, tasks, activities, settings, companies, boletos, meta: { version: 1, lastSync: null } };
+    return { users, teams, tasks, activities, settings, companies, boletos, auditLog: [], meta: { version: 1, lastSync: null } };
   }
 
   /* ------------------------------------------------------------------ */
@@ -362,29 +344,13 @@
          Roda sempre que schemaVersion < 2, independente do conteúdo. */
       const schemaVer = (parsed.meta && parsed.meta.schemaVersion) || 1;
       if (schemaVer < 2) {
-        var coSeeds = [
-          { id:"user_co1", name:"Empresa Alpha Ltda", email:"acesso@alpha.com.br", password:"alpha@2026", role:"company", companyId:"co_1", team:null, position:"Portal Empresa", avatar:"AL", status:"offline", permissions:["boletos:own"], performance:0, createdAt:todayISO() },
-          { id:"user_co2", name:"Beta Soluções ME",   email:"acesso@beta.com.br",  password:"beta@2026",  role:"company", companyId:"co_2", team:null, position:"Portal Empresa", avatar:"BS", status:"offline", permissions:["boletos:own"], performance:0, createdAt:todayISO() },
-          { id:"user_co3", name:"Gama Tecnologia SA", email:"acesso@gama.com.br",  password:"gama@2026",  role:"company", companyId:"co_3", team:null, position:"Portal Empresa", avatar:"GT", status:"offline", permissions:["boletos:own"], performance:0, createdAt:todayISO() }
-        ];
-        coSeeds.forEach(function(cu) {
-          var idx = parsed.users.findIndex(function(u) { return u.id === cu.id; });
-          if (idx >= 0) {
-            /* Atualiza email/senha se usuário existir com credenciais antigas */
-            parsed.users[idx].email    = cu.email;
-            parsed.users[idx].password = cu.password;
-            parsed.users[idx].role     = cu.role;
-            parsed.users[idx].companyId = cu.companyId;
-          } else {
-            parsed.users.push(cu);
-          }
-        });
         if (!parsed.meta) parsed.meta = {};
         parsed.meta.schemaVersion = 2;
         dirty = true;
       }
       /* Migração v3: adicionar campos de contrato às empresas existentes */
       const schemaVer3 = (parsed.meta && parsed.meta.schemaVersion) || 1;
+      /* (schemaVer3 ainda é usado abaixo — não redeclarar) */
       if (schemaVer3 < 3) {
         (parsed.companies || []).forEach(function(co) {
           if (!('contractText'     in co)) co.contractText     = "";
@@ -396,6 +362,17 @@
         parsed.meta.schemaVersion = 3;
         dirty = true;
       }
+      /* Migração v4: adicionar campo companyId às tarefas existentes */
+      if (schemaVer3 < 4) {
+        (parsed.tasks || []).forEach(function(t) {
+          if (!('companyId' in t)) t.companyId = null;
+        });
+        if (!parsed.meta) parsed.meta = {};
+        parsed.meta.schemaVersion = 4;
+        dirty = true;
+      }
+      /* Migração v5: inicializar auditLog */
+      if (!parsed.auditLog) { parsed.auditLog = []; dirty = true; }
       if (dirty) save(parsed);
       return parsed;
     } catch (e) {
@@ -432,6 +409,7 @@
     const session = { userId: user.id, loggedAt: new Date().toISOString() };
     // Sessão sempre em sessionStorage — expira ao fechar a aba ou sair da página
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    addAuditLog({ action: "Login", type: "Sessão", targetId: user.id, targetName: user.name, targetRole: user.position || user.role, authorOverride: sanitizeUser(user) });
     return { ok: true, user: sanitizeUser(user) };
   }
 
@@ -440,6 +418,7 @@
     if (session) {
       const user = db.users.find((u) => u.id === session.userId);
       if (user) {
+        addAuditLog({ action: "Logout", type: "Sessão", targetId: user.id, targetName: user.name, targetRole: user.position || user.role, authorOverride: sanitizeUser(user) });
         user.status = "offline";
         persist();
       }
@@ -509,6 +488,7 @@
       );
       db.users.push(user);
       persist();
+      addAuditLog({ action: "Criação", type: "Usuário", targetId: user.id, targetName: user.name, targetRole: user.position || user.role });
       return sanitizeUser(user);
     },
     update(id, patch) {
@@ -516,11 +496,16 @@
       if (!user) return null;
       Object.assign(user, patch);
       persist();
+      addAuditLog({ action: "Edição", type: "Usuário", targetId: id, targetName: user.name, targetRole: user.position || user.role });
       return sanitizeUser(user);
     },
     remove(id) {
+      const target = db.users.find((u) => u.id === id);
+      const tName = target ? target.name : id;
+      const tRole = target ? (target.position || target.role) : "";
       db.users = db.users.filter((u) => u.id !== id);
       persist();
+      addAuditLog({ action: "Exclusão", type: "Usuário", targetId: id, targetName: tName, targetRole: tRole });
       return true;
     }
   };
@@ -537,7 +522,7 @@
       return clone(db.teams.find((t) => t.id === id)) || null;
     },
     create(data) {
-      const team = Object.assign({ id: uid("team"), color: "#cc785c" }, data);
+      const team = Object.assign({ id: uid("team"), color: "#7c3aed" }, data);
       db.teams.push(team);
       persist();
       return clone(team);
@@ -571,6 +556,7 @@
       db.companies = db.companies || [];
       db.companies.push(co);
       persist();
+      addAuditLog({ action: "Criação", type: "Empresa", targetId: co.id, targetName: co.name, companyId: co.id, companyName: co.name });
       return clone(co);
     },
     update(id, patch) {
@@ -578,11 +564,15 @@
       if (!co) return null;
       Object.assign(co, patch);
       persist();
+      addAuditLog({ action: "Edição", type: "Empresa", targetId: id, targetName: co.name, companyId: id, companyName: co.name });
       return clone(co);
     },
     remove(id) {
+      const target = (db.companies || []).find((c) => c.id === id);
+      const tName = target ? target.name : id;
       db.companies = (db.companies || []).filter((c) => c.id !== id);
       persist();
+      addAuditLog({ action: "Exclusão", type: "Empresa", targetId: id, targetName: tName, companyId: id, companyName: tName });
       return true;
     },
     signContract(id, signerName) {
@@ -591,6 +581,7 @@
       co.contractSignedAt = new Date().toISOString();
       co.contractSignedBy = signerName;
       persist();
+      addAuditLog({ action: "Assinatura", type: "Contrato", targetId: id, targetName: co.name, companyId: id, companyName: co.name, details: `Assinado por: ${signerName}` });
       return clone(co);
     },
     resetContractSign(id) {
@@ -599,6 +590,7 @@
       co.contractSignedAt = null;
       co.contractSignedBy = null;
       persist();
+      addAuditLog({ action: "Redefinição", type: "Contrato", targetId: id, targetName: co.name, companyId: id, companyName: co.name });
       return clone(co);
     }
   };
@@ -623,6 +615,8 @@
       db.boletos = db.boletos || [];
       db.boletos.push(bol);
       persist();
+      const bCo = (db.companies || []).find((c) => c.id === bol.companyId);
+      addAuditLog({ action: "Criação", type: "Boleto", targetId: bol.id, targetName: bol.description, companyId: bol.companyId, companyName: bCo ? bCo.name : "" });
       return clone(bol);
     },
     update(id, patch) {
@@ -630,11 +624,18 @@
       if (!bol) return null;
       Object.assign(bol, patch);
       persist();
+      const bCo = (db.companies || []).find((c) => c.id === bol.companyId);
+      addAuditLog({ action: "Edição", type: "Boleto", targetId: id, targetName: bol.description, companyId: bol.companyId, companyName: bCo ? bCo.name : "" });
       return clone(bol);
     },
     remove(id) {
+      const target = (db.boletos || []).find((b) => b.id === id);
+      const tName = target ? target.description : id;
+      const tCoId = target ? target.companyId : null;
+      const tCo = tCoId ? (db.companies || []).find((c) => c.id === tCoId) : null;
       db.boletos = (db.boletos || []).filter((b) => b.id !== id);
       persist();
+      addAuditLog({ action: "Exclusão", type: "Boleto", targetId: id, targetName: tName, companyId: tCoId, companyName: tCo ? tCo.name : "" });
       return true;
     }
   };
@@ -647,7 +648,8 @@
     list(filter) {
       let list = clone(db.tasks);
       if (filter) {
-        if (filter.assignee) list = list.filter((t) => t.assignee === filter.assignee);
+        if (filter.assignee)   list = list.filter((t) => t.assignee === filter.assignee);
+        if (filter.companyId)  list = list.filter((t) => t.companyId === filter.companyId);
         if (filter.includeArchived !== true) list = list.filter((t) => !t.archived);
       }
       return list;
@@ -673,6 +675,8 @@
       db.tasks.push(task);
       logActivity(getCurrentUser()?.id, `criou a tarefa "${task.title}"`);
       persist();
+      const tCo = task.companyId ? (db.companies || []).find((c) => c.id === task.companyId) : null;
+      addAuditLog({ action: "Criação", type: "Tarefa", targetId: task.id, targetName: task.title, companyId: task.companyId || null, companyName: tCo ? tCo.name : null });
       return clone(task);
     },
     update(id, patch) {
@@ -680,11 +684,17 @@
       if (!task) return null;
       Object.assign(task, patch, { updatedAt: todayISO() });
       persist();
+      const tCo = task.companyId ? (db.companies || []).find((c) => c.id === task.companyId) : null;
+      addAuditLog({ action: "Edição", type: "Tarefa", targetId: id, targetName: task.title, companyId: task.companyId || null, companyName: tCo ? tCo.name : null });
       return clone(task);
     },
     remove(id) {
+      const target = db.tasks.find((t) => t.id === id);
+      const tName = target ? target.title : id;
+      const tCo = target && target.companyId ? (db.companies || []).find((c) => c.id === target.companyId) : null;
       db.tasks = db.tasks.filter((t) => t.id !== id);
       persist();
+      addAuditLog({ action: "Exclusão", type: "Tarefa", targetId: id, targetName: tName, companyId: target ? target.companyId : null, companyName: tCo ? tCo.name : null });
       return true;
     },
     duplicate(id) {
@@ -698,6 +708,7 @@
       copy.updatedAt = todayISO();
       db.tasks.push(copy);
       persist();
+      addAuditLog({ action: "Criação", type: "Tarefa", targetId: copy.id, targetName: copy.title, details: `Duplicada de: ${original.title}` });
       return clone(copy);
     },
     archive(id, archived) {
@@ -705,6 +716,7 @@
       if (!task) return null;
       task.archived = archived !== false;
       persist();
+      addAuditLog({ action: "Edição", type: "Tarefa", targetId: id, targetName: task.title, details: archived !== false ? "Arquivada" : "Desarquivada" });
       return clone(task);
     },
     addComment(id, author, text) {
@@ -731,9 +743,60 @@
     db.activities = db.activities.slice(0, 50);
   }
 
+  function addAuditLog({ action, type, targetId, targetName, targetRole, companyId, companyName, details, authorOverride }) {
+    const actor = authorOverride || getCurrentUser();
+    if (!actor) return;
+    db.auditLog = db.auditLog || [];
+    db.auditLog.unshift({
+      id: uid("audit"),
+      timestamp: new Date().toISOString(),
+      authorId: actor.id,
+      authorName: actor.name,
+      authorPosition: actor.position || (actor.role === "admin" ? "Administrador" : actor.role === "employee" ? "Funcionário" : "Empresa"),
+      action,
+      type,
+      targetId: targetId || "",
+      targetName: targetName || "",
+      targetRole: targetRole || null,
+      companyId: companyId || null,
+      companyName: companyName || null,
+      details: details || ""
+    });
+    db.auditLog = db.auditLog.slice(0, 1000);
+    persist();
+  }
+
   const Activities = {
     list(limit) {
       return clone((db.activities || []).slice(0, limit || 10));
+    }
+  };
+
+  const Audit = {
+    list(filter) {
+      let logs = clone(db.auditLog || []);
+      if (filter) {
+        if (filter.days) {
+          const cutoff = new Date();
+          cutoff.setDate(cutoff.getDate() - filter.days);
+          logs = logs.filter((e) => new Date(e.timestamp) >= cutoff);
+        }
+        if (filter.search) {
+          const q = filter.search.toLowerCase();
+          logs = logs.filter((e) =>
+            (e.authorName  || "").toLowerCase().includes(q) ||
+            (e.targetName  || "").toLowerCase().includes(q) ||
+            (e.companyName || "").toLowerCase().includes(q) ||
+            (e.type        || "").toLowerCase().includes(q) ||
+            (e.action      || "").toLowerCase().includes(q)
+          );
+        }
+      }
+      return logs;
+    },
+    clear() {
+      db.auditLog = [];
+      persist();
     }
   };
 
@@ -973,6 +1036,7 @@
     Boletos,
     Tasks,
     Activities,
+    Audit,
     Settings,
     Stats,
     exportToExcel,

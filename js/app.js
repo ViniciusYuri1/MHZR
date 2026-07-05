@@ -19,6 +19,7 @@
     { id: "team", label: "Equipe", icon: "👥", roles: ["admin"], section: "Gestão" },
     { id: "financial", label: "Financeiro", icon: "💰", roles: ["admin"], section: "Gestão" },
     { id: "reports", label: "Relatórios", icon: "📈", roles: ["admin"], section: "Gestão" },
+    { id: "audit", label: "Auditoria", icon: "🔍", roles: ["admin"], section: "Sistema" },
     { id: "settings", label: "Configurações", icon: "⚙️", roles: ["admin", "employee"], section: "Sistema" },
     { id: "portal", label: "Meus Boletos", icon: "🧾", roles: ["company"], section: "Portal" }
   ];

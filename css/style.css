@@ -5,36 +5,35 @@
    ========================================================================== */
 
 :root {
-  /* Paleta inspirada no design da Claude/Anthropic: tons terrosos,
-     fundo quente em creme e acento em terracota. */
-  --color-primary: #cc785c;
-  --color-primary-dark: #b5664c;
-  --color-primary-light: #f3e3da;
-  --color-accent-soft: #e8c4a8;
-  --color-success: #5f9b76;
-  --color-success-light: #e7f1e9;
-  --color-warning: #d9a441;
-  --color-warning-light: #faf0dd;
-  --color-danger: #c1543d;
-  --color-danger-light: #f6e3dd;
-  --color-info: #6a8caf;
-  --color-info-light: #e9eff5;
+  /* Paleta roxa — inspirada na identidade visual da marca */
+  --color-primary: #7c3aed;
+  --color-primary-dark: #6d28d9;
+  --color-primary-light: #ede9fe;
+  --color-accent-soft: #c4b5fd;
+  --color-success: #16a34a;
+  --color-success-light: #dcfce7;
+  --color-warning: #ca8a04;
+  --color-warning-light: #fef9c3;
+  --color-danger: #dc2626;
+  --color-danger-light: #fee2e2;
+  --color-info: #2563eb;
+  --color-info-light: #dbeafe;
 
-  --bg-app: #f7f5ef;
+  --bg-app: #f5f3ff;
   --bg-surface: #ffffff;
-  --bg-surface-alt: #f3f1e9;
-  --bg-hover: #ece8dd;
-  --border-color: #e6e2d6;
-  --text-primary: #2b2a27;
-  --text-secondary: #6f6a60;
-  --text-muted: #9a948a;
+  --bg-surface-alt: #ede9fe;
+  --bg-hover: #e5deff;
+  --border-color: #ddd6fe;
+  --text-primary: #1e1030;
+  --text-secondary: #5b4b8a;
+  --text-muted: #9580c0;
 
   --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
   --font-serif: "Source Serif 4", "Georgia", serif;
 
-  --shadow-sm: 0 1px 2px rgba(43, 35, 25, 0.06);
-  --shadow-md: 0 6px 16px rgba(43, 35, 25, 0.08);
-  --shadow-lg: 0 16px 40px rgba(43, 35, 25, 0.16);
+  --shadow-sm: 0 1px 2px rgba(100, 50, 200, 0.08);
+  --shadow-md: 0 6px 16px rgba(100, 50, 200, 0.10);
+  --shadow-lg: 0 16px 40px rgba(100, 50, 200, 0.18);
 
   --radius-sm: 6px;
   --radius-md: 10px;
@@ -48,26 +47,27 @@
 }
 
 [data-theme="dark"] {
-  --bg-app: #1b1815;
-  --bg-surface: #242019;
-  --bg-surface-alt: #2b261e;
-  --bg-hover: #342d23;
-  --border-color: #3c352a;
-  --text-primary: #f3efe6;
-  --text-secondary: #bcb3a4;
-  --text-muted: #837a6c;
+  --bg-app: #09080f;
+  --bg-surface: #100e1a;
+  --bg-surface-alt: #17152a;
+  --bg-hover: #1f1c35;
+  --border-color: #2a2745;
+  --text-primary: #f0ecff;
+  --text-secondary: #b8a8e8;
+  --text-muted: #7868a8;
 
-  --color-primary: #e0916f;
-  --color-primary-dark: #cc785c;
-  --color-primary-light: #3a2a22;
-  --color-success-light: #1f2a22;
-  --color-warning-light: #332811;
-  --color-danger-light: #34211b;
-  --color-info-light: #1f2730;
+  --color-primary: #a78bfa;
+  --color-primary-dark: #8b5cf6;
+  --color-primary-light: #2d1f5e;
+  --color-accent-soft: #4c3a8a;
+  --color-success-light: #0f2a1a;
+  --color-warning-light: #2a1f08;
+  --color-danger-light: #2a1018;
+  --color-info-light: #0f1f35;
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 18px 44px rgba(0, 0, 0, 0.55);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 18px 44px rgba(0, 0, 0, 0.65);
 }
 
 * {
@@ -240,7 +240,7 @@ textarea.form-control { resize: vertical; min-height: 80px; }
   padding: 18px 20px;
   border-bottom: 1px solid var(--border-color);
 }
-.card-title { font-size: 15px; font-weight: 700; margin: 0; }
+.card-title { font-size: 15px; font-weight: 700; margin: 0; flex: 1; }
 
 /* -------------------------------------------------------------------- */
 /* Badges / Tags                                                        */

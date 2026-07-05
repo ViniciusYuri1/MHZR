@@ -45,8 +45,19 @@
     return d.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
   }
 
+  const STATUS_TASK = {
+    backlog:      { label: "Backlog",      badge: "badge-backlog",      step: 0 },
+    nao_iniciada: { label: "A Fazer",      badge: "badge-nao_iniciada", step: 1 },
+    em_andamento: { label: "Em Progresso", badge: "badge-em_andamento", step: 2 },
+    em_revisao:   { label: "Revisão",      badge: "badge-em_revisao",   step: 3 },
+    concluida:    { label: "Concluído",    badge: "badge-concluida",    step: 4 }
+  };
+  const PRIORITY_TASK = { baixa: "Baixa", media: "Média", alta: "Alta", urgente: "Urgente" };
+  const STEPS_TASK = ["Backlog", "A Fazer", "Em Progresso", "Revisão", "Concluído"];
+
   /* ---- estado interno de filtro ---- */
   let filterMonth = currentYM();
+  let portalTab   = "boletos";
 
   /* ================================================================= */
   /* TELA DE ASSINATURA DO CONTRATO                                     */
@@ -198,108 +209,164 @@
       return;
     }
 
-    const allBoletos = DB.Boletos.list({ companyId: ctx.user.companyId });
-    const today      = DB.todayISO();
+    const initials          = company ? company.name.split(" ").slice(0, 2).map((p) => p[0]).join("").toUpperCase() : "EM";
+    const hasSignedContract = company && company.contractText && company.contractSignedAt;
+    const companyName       = UI.escapeHtml(company ? company.name : ctx.user.name);
 
-    /* ---- filtro ---- */
-    if (!allBoletos.some((b) => b.month === filterMonth)) {
-      filterMonth = allBoletos.length ? allBoletos[allBoletos.length - 1].month : currentYM();
+    /* ---- tabs ---- */
+    const tabBar = `
+      <div style="display:flex;gap:2px;margin-bottom:22px;border-bottom:2px solid var(--border-color);">
+        ${[["boletos","🧾 Boletos"],["tarefas","✅ Tarefas"]].map(([id, label]) => {
+          const active = portalTab === id;
+          return `<button data-portal-tab="${id}" style="padding:10px 20px;border:none;background:none;cursor:pointer;font-size:14px;font-weight:600;color:${active ? "var(--color-primary)" : "var(--text-muted)"};border-bottom:2px solid ${active ? "var(--color-primary)" : "transparent"};margin-bottom:-2px;transition:color .2s,border-color .2s;">${label}</button>`;
+        }).join("")}
+      </div>`;
+
+    /* ===== ABA BOLETOS ===== */
+    function renderBoletosContent() {
+      const allBoletos = DB.Boletos.list({ companyId: ctx.user.companyId });
+      const today      = DB.todayISO();
+      if (!allBoletos.some((b) => b.month === filterMonth)) {
+        filterMonth = allBoletos.length ? allBoletos[allBoletos.length - 1].month : currentYM();
+      }
+      const filtered       = allBoletos.filter((b) => !filterMonth || b.month === filterMonth);
+      const hasMonthFilter = allBoletos.length > 0;
+
+      const rows = filtered.length === 0
+        ? `<tr><td colspan="6" style="text-align:center;padding:36px;color:var(--text-muted);">Nenhum boleto neste período.</td></tr>`
+        : filtered.map((b) => {
+            const cfg    = STATUS_CFG[b.status] || STATUS_CFG.pendente;
+            const overdue = b.status === "pendente" && b.dueDate < today;
+            return `<tr>
+              <td><div style="font-weight:600;">${UI.escapeHtml(b.description)}</div><div class="text-sm text-muted">${monthLabel(b.month)}</div></td>
+              <td style="font-weight:700;color:var(--color-primary);font-size:1.05rem;">${brl(b.amount)}</td>
+              <td class="text-sm" style="${overdue ? "color:var(--color-danger);font-weight:600;" : ""}">${UI.formatDate(b.dueDate)}${overdue ? " ⚠️" : ""}</td>
+              <td class="text-sm">${b.paidDate ? UI.formatDate(b.paidDate) : "—"}</td>
+              <td><span class="badge ${cfg.badge}">${cfg.icon} ${cfg.label}</span></td>
+              <td>${b.attachment ? `<button class="btn btn-secondary btn-sm" data-open-att="${b.id}">📎 Ver boleto</button>` : `<span class="text-sm text-muted">—</span>`}</td>
+            </tr>`;
+          }).join("");
+
+      return `
+        <div class="card">
+          <div class="card-header" style="flex-wrap:wrap;gap:10px;">
+            <h3 class="card-title">Boletos</h3>
+            ${hasMonthFilter ? `
+            <div class="flex items-center gap-2">
+              <label class="text-sm text-muted">Período:</label>
+              <select class="form-control" id="portal-month" style="width:auto;min-width:160px;">
+                <option value="">Todos os períodos</option>
+                ${monthOptions(filterMonth, allBoletos)}
+              </select>
+            </div>` : ""}
+          </div>
+          <div style="overflow-x:auto;">
+            <table class="data-table">
+              <thead><tr><th>Descrição</th><th>Valor</th><th>Vencimento</th><th>Pagamento</th><th>Status</th><th>Arquivo</th></tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+        </div>
+        <p class="text-sm text-muted" style="margin-top:18px;text-align:center;">Dúvidas sobre cobranças? Entre em contato com a equipe responsável.</p>`;
     }
-    const filtered = allBoletos.filter((b) => !filterMonth || b.month === filterMonth);
-    const hasMonthFilter = allBoletos.length > 0;
 
-    /* ---- linhas da tabela ---- */
-    const rows = filtered.length === 0
-      ? `<tr><td colspan="6" style="text-align:center;padding:36px;color:var(--text-muted);">Nenhum boleto neste período.</td></tr>`
-      : filtered.map((b) => {
-          const cfg    = STATUS_CFG[b.status] || STATUS_CFG.pendente;
-          const overdue = b.status === "pendente" && b.dueDate < today;
-          return `<tr>
-            <td>
-              <div style="font-weight:600;">${UI.escapeHtml(b.description)}</div>
-              <div class="text-sm text-muted">${monthLabel(b.month)}</div>
-            </td>
-            <td style="font-weight:700;color:var(--color-primary);font-size:1.05rem;">${brl(b.amount)}</td>
-            <td class="text-sm" style="${overdue ? "color:var(--color-danger);font-weight:600;" : ""}">${UI.formatDate(b.dueDate)}${overdue ? " ⚠️" : ""}</td>
-            <td class="text-sm">${b.paidDate ? UI.formatDate(b.paidDate) : "—"}</td>
-            <td><span class="badge ${cfg.badge}">${cfg.icon} ${cfg.label}</span></td>
-            <td>
-              ${b.attachment
-                ? `<button class="btn btn-secondary btn-sm" data-open-att="${b.id}">📎 Ver boleto</button>`
-                : `<span class="text-sm text-muted">—</span>`}
-            </td>
-          </tr>`;
+    /* ===== ABA TAREFAS ===== */
+    function renderTarefasContent() {
+      const tasks = DB.Tasks.list({ companyId: ctx.user.companyId });
+      const today = DB.todayISO();
+
+      if (!tasks.length) {
+        return `<div class="empty-state"><div class="empty-icon">📋</div>Nenhuma tarefa vinculada à sua empresa ainda.</div>`;
+      }
+
+      const cards = tasks.map((t) => {
+        const st      = STATUS_TASK[t.status] || STATUS_TASK.nao_iniciada;
+        const step    = st.step;
+        const overdue = t.status !== "concluida" && t.dueDate < today;
+        const done    = (t.checklist || []).filter((c) => c.done).length;
+        const total   = (t.checklist || []).length;
+        const pct     = total ? Math.round((done / total) * 100) : 0;
+        const prLabel = PRIORITY_TASK[t.priority] || t.priority;
+
+        const prColor = t.priority === "urgente" ? "var(--color-danger)"
+                      : t.priority === "alta"    ? "#a85a3f"
+                      : t.priority === "media"   ? "var(--color-warning)"
+                      : "var(--color-info)";
+
+        /* barra de progresso de etapas */
+        const stepsBar = STEPS_TASK.map((s, i) => {
+          const done_s   = i < step;
+          const current  = i === step;
+          const bg       = done_s ? "var(--color-primary)" : current ? "var(--color-primary)" : "var(--border-color)";
+          const opacity  = done_s || current ? "1" : "0.35";
+          return `<div title="${s}" style="flex:1;height:6px;border-radius:3px;background:${bg};opacity:${opacity};transition:background .3s;"></div>`;
         }).join("");
 
-    const initials = company
-      ? company.name.split(" ").slice(0, 2).map((p) => p[0]).join("").toUpperCase()
-      : "EM";
+        return `
+        <div class="card" style="margin-bottom:14px;">
+          <div class="card-pad">
+            <div class="flex items-center justify-between" style="margin-bottom:8px;flex-wrap:wrap;gap:6px;">
+              <div style="font-weight:700;font-size:15px;flex:1;min-width:0;">${UI.escapeHtml(t.title)}</div>
+              <span class="badge ${st.badge}" style="flex-shrink:0;">${st.label}</span>
+            </div>
+            ${t.description ? `<div class="text-sm text-muted" style="margin-bottom:10px;line-height:1.5;">${UI.escapeHtml(t.description.slice(0, 160))}${t.description.length > 160 ? "…" : ""}</div>` : ""}
 
-    const hasSignedContract = company && company.contractText && company.contractSignedAt;
+            <!-- barra de etapas -->
+            <div style="display:flex;gap:3px;margin-bottom:10px;">${stepsBar}</div>
+            <div class="text-sm text-muted" style="margin-bottom:12px;">${STEPS_TASK[step]}</div>
+
+            <div class="flex gap-4" style="font-size:13px;flex-wrap:wrap;">
+              <div>📅 <span class="text-muted">Prazo:</span> <strong style="${overdue ? "color:var(--color-danger);" : ""}">${UI.formatDate(t.dueDate)}${overdue ? " ⚠️" : ""}</strong></div>
+              <div>🎯 <span class="text-muted">Prioridade:</span> <strong style="color:${prColor};">${prLabel}</strong></div>
+              ${total ? `<div>☑️ <span class="text-muted">Checklist:</span> <strong>${done}/${total}</strong>
+                <div class="progress-bar" style="width:80px;display:inline-flex;margin-left:4px;vertical-align:middle;">
+                  <div class="progress-bar-fill" style="width:${pct}%;"></div>
+                </div></div>` : ""}
+            </div>
+
+            ${(t.tags || []).length ? `<div style="margin-top:10px;">${t.tags.map((tag) => `<span class="tag-pill">${UI.escapeHtml(tag)}</span>`).join(" ")}</div>` : ""}
+          </div>
+        </div>`;
+      }).join("");
+
+      return `
+        <div class="page-header" style="margin-bottom:14px;">
+          <div>
+            <h3 style="margin:0;font-size:15px;">Suas Tarefas</h3>
+            <p class="page-subtitle">${tasks.length} tarefa(s) vinculada(s) à sua empresa.</p>
+          </div>
+        </div>
+        ${cards}`;
+    }
 
     container.innerHTML = `
-      <!-- cabeçalho da empresa -->
-      <div style="display:flex;align-items:center;gap:16px;margin-bottom:28px;flex-wrap:wrap;">
-        <div style="width:52px;height:52px;background:var(--color-primary);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#fff;flex-shrink:0;">
-          ${initials}
-        </div>
+      <!-- cabeçalho -->
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:22px;flex-wrap:wrap;">
+        <div style="width:52px;height:52px;background:var(--color-primary);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#fff;flex-shrink:0;">${initials}</div>
         <div style="flex:1;min-width:180px;">
-          <h1 style="margin:0;line-height:1.1;">${UI.escapeHtml(company ? company.name : ctx.user.name)}</h1>
-          <p class="page-subtitle" style="margin:4px 0 0;">Portal de Boletos — acesso exclusivo à sua conta</p>
+          <h1 style="margin:0;line-height:1.1;">${companyName}</h1>
+          <p class="page-subtitle" style="margin:4px 0 0;">Portal do Cliente</p>
         </div>
-        ${hasSignedContract ? `
-        <button class="btn btn-secondary" id="btn-view-contract" style="flex-shrink:0;">
-          📄 Ver Contrato Assinado
-        </button>` : ""}
+        ${hasSignedContract ? `<button class="btn btn-secondary" id="btn-view-contract" style="flex-shrink:0;">📄 Contrato</button>` : ""}
       </div>
-
-      <!-- tabela de boletos -->
-      <div class="card">
-        <div class="card-header" style="flex-wrap:wrap;gap:10px;">
-          <h3 class="card-title">Boletos</h3>
-          ${hasMonthFilter ? `
-          <div class="flex items-center gap-2">
-            <label class="text-sm text-muted">Período:</label>
-            <select class="form-control" id="portal-month" style="width:auto;min-width:160px;">
-              <option value="">Todos os períodos</option>
-              ${monthOptions(filterMonth, allBoletos)}
-            </select>
-          </div>` : ""}
-        </div>
-        <div style="overflow-x:auto;">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Descrição</th>
-                <th>Valor</th>
-                <th>Vencimento</th>
-                <th>Pagamento</th>
-                <th>Status</th>
-                <th>Arquivo</th>
-              </tr>
-            </thead>
-            <tbody>${rows}</tbody>
-          </table>
-        </div>
-      </div>
-
-      <p class="text-sm text-muted" style="margin-top:18px;text-align:center;">
-        Dúvidas sobre cobranças? Entre em contato com a equipe responsável pela sua conta.
-      </p>`;
+      ${tabBar}
+      <div id="portal-tab-content">${portalTab === "boletos" ? renderBoletosContent() : renderTarefasContent()}</div>`;
 
     /* ---- eventos ---- */
-    const monthSel = container.querySelector("#portal-month");
-    if (monthSel) {
-      monthSel.addEventListener("change", (e) => {
-        filterMonth = e.target.value;
+    container.querySelectorAll("[data-portal-tab]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        portalTab = btn.dataset.portalTab;
         window.Views.portal(container, ctx);
       });
+    });
+
+    const monthSel = container.querySelector("#portal-month");
+    if (monthSel) {
+      monthSel.addEventListener("change", (e) => { filterMonth = e.target.value; window.Views.portal(container, ctx); });
     }
 
     const contractBtn = container.querySelector("#btn-view-contract");
-    if (contractBtn) {
-      contractBtn.addEventListener("click", () => openContractViewModal(company));
-    }
+    if (contractBtn) contractBtn.addEventListener("click", () => openContractViewModal(company));
 
     container.querySelectorAll("[data-open-att]").forEach((btn) => {
       btn.addEventListener("click", () => {

@@ -305,6 +305,11 @@
   display: grid;
   grid-template-columns: 1.6fr 1fr;
   gap: 18px;
+  align-items: stretch;
+}
+.dashboard-grid > .flex-col {
+  display: flex;
+  flex-direction: column;
 }
 @media (max-width: 1100px) {
   .dashboard-grid { grid-template-columns: 1fr; }
@@ -420,9 +425,99 @@
 }
 .kanban-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); border-color: var(--color-primary); }
 .kanban-card.dragging { opacity: 0.4; }
-.kanban-card .kc-title { font-size: 13.5px; font-weight: 700; }
+.kanban-card .kc-title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; }
+.kanban-card .kc-title { font-size: 13.5px; font-weight: 700; flex: 1; }
+.kanban-card .kc-delete-btn { background: none; border: none; cursor: pointer; font-size: 14px; opacity: 0; padding: 0 2px; line-height: 1; transition: opacity .15s; flex-shrink: 0; }
+.kanban-card:hover .kc-delete-btn { opacity: 0.45; }
+.kanban-card .kc-delete-btn:hover { opacity: 1 !important; }
 .kanban-card .kc-meta { display: flex; align-items: center; justify-content: space-between; }
 .kanban-card .kc-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+
+/* -------------------------------------------------------------------- */
+/* Auditoria                                                            */
+/* -------------------------------------------------------------------- */
+
+.audit-filters {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.audit-period-btns { display: flex; gap: 6px; }
+.audit-period-btn {
+  background: var(--bg-surface-alt);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all .15s;
+}
+.audit-period-btn.active,
+.audit-period-btn:hover {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+.audit-count-badge {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.audit-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+}
+.audit-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.audit-table thead th {
+  background: var(--bg-surface-alt);
+  padding: 10px 14px;
+  text-align: left;
+  font-weight: 700;
+  color: var(--text-secondary);
+  font-size: 12px;
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+.audit-table thead th:first-child { border-radius: var(--radius-lg) 0 0 0; }
+.audit-table thead th:last-child  { border-radius: 0 var(--radius-lg) 0 0; }
+.audit-date-row td {
+  background: var(--bg-surface-alt);
+  padding: 6px 14px;
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--text-secondary);
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  letter-spacing: .03em;
+}
+.audit-row td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
+  color: var(--text-primary);
+}
+.audit-row:last-child td { border-bottom: none; }
+.audit-row:hover td { background: var(--bg-hover); }
+.audit-time { font-family: monospace; font-size: 13px; color: var(--text-secondary); white-space: nowrap; }
+.audit-author-name { font-weight: 600; }
+.audit-author-pos  { font-size: 11px; color: var(--text-muted); }
+.audit-type { white-space: nowrap; color: var(--text-secondary); }
+.audit-target { max-width: 260px; }
+.audit-target span { font-weight: 500; }
+.audit-details { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.audit-role    { color: var(--text-secondary); white-space: nowrap; }
+.audit-company { color: var(--text-secondary); white-space: nowrap; }
 
 /* -------------------------------------------------------------------- */
 /* Calendário grande                                                    */

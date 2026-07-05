@@ -49,12 +49,14 @@
   /* BOLETOS TAB                                                        */
   /* ================================================================= */
 
-  function renderStatCards(boletos) {
+  function renderStatCards(boletos, filterMonth) {
     const recebido  = boletos.filter((b) => b.status === "pago").reduce((s, b) => s + b.amount, 0);
     const pendentes = boletos.filter((b) => b.status === "pendente");
     const vencidos  = boletos.filter((b) => b.status === "vencido");
-    const mes       = currentYM();
-    const recMes    = boletos.filter((b) => b.status === "pago" && b.month === mes).reduce((s, b) => s + b.amount, 0);
+    /* Recebido no mês: usa o filtro de mês ativo, ou o mês atual se não houver filtro */
+    const mes       = filterMonth || currentYM();
+    const boletosDoMes = filterMonth ? boletos : DB.Boletos.list({ month: mes });
+    const recMes    = boletosDoMes.filter((b) => b.status === "pago").reduce((s, b) => s + b.amount, 0);
 
     const cards = [
       { icon: "💵", bg: "var(--color-success-light)",  color: "var(--color-success)",  value: brl(recebido),                                         label: "Total Recebido"                                    },
@@ -115,7 +117,7 @@
     ).join("");
 
     wrap.innerHTML = `
-      ${renderStatCards(all)}
+      ${renderStatCards(filtered, state.filterMonth)}
       <div class="card">
         <div class="card-header" style="flex-wrap:wrap;gap:10px;">
           <h3 class="card-title">Boletos</h3>
