@@ -1017,6 +1017,17 @@
     persist();
   }
 
+  /* Recarrega o banco de memória a partir do localStorage (útil quando
+     outra aba pode ter gravado dados enquanto esta estava aberta) */
+  function reloadFromStorage() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) db = JSON.parse(raw);
+    } catch (e) {
+      /* ignora leitura inválida — mantém db atual */
+    }
+  }
+
   /* ------------------------------------------------------------------ */
   /* Exposição pública                                                    */
   /* ------------------------------------------------------------------ */
@@ -1042,6 +1053,7 @@
     exportToExcel,
     importFromExcel,
     resetDatabase,
+    reload: reloadFromStorage,
     api
   };
 })(window);

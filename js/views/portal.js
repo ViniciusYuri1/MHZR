@@ -201,16 +201,23 @@
   /* ================================================================= */
 
   window.Views.portal = function (container, ctx) {
+    /* Garante que os dados reflitam qualquer alteração feita pelo admin
+       (ex.: contrato anexado, boleto criado) enquanto esta aba estava aberta */
+    DB.reload();
     const company = ctx.user.companyId ? DB.Companies.get(ctx.user.companyId) : null;
 
-    /* Portão de contrato: se existe texto e ainda não foi assinado → tela de assinatura */
-    if (company && company.contractText && company.contractText.trim() && !company.contractSignedAt) {
+    /* Portão de contrato: se existe texto OU arquivo e ainda não foi assinado → tela de assinatura */
+    const hasContract = company && (
+      (company.contractText && company.contractText.trim()) ||
+      company.contractFile
+    );
+    if (hasContract && !company.contractSignedAt) {
       renderContractScreen(container, ctx, company);
       return;
     }
 
     const initials          = company ? company.name.split(" ").slice(0, 2).map((p) => p[0]).join("").toUpperCase() : "EM";
-    const hasSignedContract = company && company.contractText && company.contractSignedAt;
+    const hasSignedContract = company && hasContract && company.contractSignedAt;
     const companyName       = UI.escapeHtml(company ? company.name : ctx.user.name);
 
     /* ---- tabs ---- */
@@ -224,7 +231,7 @@
 
     /* ===== ABA BOLETOS ===== */
     function renderBoletosContent() {
-      const allBoletos = DB.Boletos.list({ companyId: ctx.user.companyId });
+      const allBoletos = DB.Boletos.list({ companyId: ctx.user.companyId || "_none" });
       const today      = DB.todayISO();
       if (!allBoletos.some((b) => b.month === filterMonth)) {
         filterMonth = allBoletos.length ? allBoletos[allBoletos.length - 1].month : currentYM();
@@ -272,7 +279,8 @@
 
     /* ===== ABA TAREFAS ===== */
     function renderTarefasContent() {
-      const tasks = DB.Tasks.list({ companyId: ctx.user.companyId });
+      /* Usa "_none" como fallback para nunca vazar tarefas de outros quando companyId for nulo */
+      const tasks = DB.Tasks.list({ companyId: ctx.user.companyId || "_none" });
       const today = DB.todayISO();
 
       if (!tasks.length) {

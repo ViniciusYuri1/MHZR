@@ -116,16 +116,22 @@
 
     setTimeout(() => {
       try {
-        const co = DB.Companies.create({
-          name,
-          cnpj: cnpj || "",
-          phone: phone || "",
-          status: "ativo",
-          contractText: "",
-          contractFile: null,
-          contractSignedAt: null,
-          contractSignedBy: null,
-        });
+        /* Reutiliza empresa existente com o mesmo nome (evita duplicatas) */
+        let co = DB.Companies.list().find(
+          (c) => c.name.trim().toLowerCase() === name.trim().toLowerCase()
+        );
+        if (!co) {
+          co = DB.Companies.create({
+            name,
+            cnpj: cnpj || "",
+            phone: phone || "",
+            status: "ativo",
+            contractText: "",
+            contractFile: null,
+            contractSignedAt: null,
+            contractSignedBy: null,
+          });
+        }
 
         const initials = name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 

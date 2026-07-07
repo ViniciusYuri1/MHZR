@@ -185,6 +185,18 @@
     const companies = DB.Companies.list();
     const boletos   = DB.Boletos.list();
 
+    /* IDs de empresas com usuário de portal ativo mas sem contrato cadastrado */
+    const allPortalUsers = DB.Users.list().filter((u) => u.role === "company");
+    const newCoIds = new Set(
+      companies
+        .filter((co) => {
+          const hasUser = allPortalUsers.some((u) => u.companyId === co.id);
+          const hasCtr  = (co.contractText && co.contractText.trim()) || co.contractFile;
+          return hasUser && !hasCtr;
+        })
+        .map((co) => co.id)
+    );
+
     const cards = companies.length === 0
       ? `<div class="empty-state"><div class="empty-icon">🏢</div>Nenhuma empresa cadastrada ainda.</div>`
       : companies.map((co) => {
@@ -192,21 +204,25 @@
           const recebido = coB.filter((b) => b.status === "pago").reduce((s, b) => s + b.amount, 0);
           const aReceber = coB.filter((b) => b.status === "pendente" || b.status === "vencido").reduce((s, b) => s + b.amount, 0);
           const initials = co.name.split(" ").slice(0, 2).map((p) => p[0]).join("").toUpperCase();
-          const hasCtr   = co.contractText && co.contractText.trim();
+          const hasCtr   = (co.contractText && co.contractText.trim()) || co.contractFile;
           const signed   = hasCtr && co.contractSignedAt;
+          const isNew    = newCoIds.has(co.id) && !hasCtr;
           const contractBadge = hasCtr
             ? (signed
                 ? `<span class="badge badge-concluida" style="font-size:11px;">✅ Contrato assinado</span>`
                 : `<span class="badge badge-em_andamento" style="font-size:11px;">📝 Aguardando assinatura</span>`)
             : `<span class="badge badge-backlog" style="font-size:11px;">📄 Sem contrato</span>`;
+          const newBadge = isNew
+            ? `<span class="badge" style="font-size:11px;background:#7c3aed;color:#fff;margin-left:6px;">🆕 Novo cadastro</span>`
+            : "";
           return `
-          <div class="card">
+          <div class="card" style="${isNew ? "border:1.5px solid var(--color-primary);" : ""}">
             <div class="card-pad">
               <div class="flex items-center justify-between" style="margin-bottom:8px;">
                 <div class="flex items-center gap-2">
                   <div class="avatar" style="width:38px;height:38px;background:var(--color-primary-light);color:var(--color-primary);font-weight:700;font-size:13px;border-radius:10px;display:flex;align-items:center;justify-content:center;">${initials}</div>
                   <div>
-                    <div style="font-weight:700;line-height:1.2;">${UI.escapeHtml(co.name)}</div>
+                    <div style="font-weight:700;line-height:1.2;">${UI.escapeHtml(co.name)}${newBadge}</div>
                     <div class="text-sm text-muted">${UI.escapeHtml(co.cnpj || "")}</div>
                   </div>
                 </div>
@@ -234,6 +250,13 @@
           </div>`;
         }).join("");
 
+    const newCount = newCoIds.size;
+    const alertBanner = newCount > 0
+      ? `<div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--color-primary-light);border:1px solid var(--color-primary);border-radius:10px;margin-bottom:16px;font-size:13px;font-weight:600;color:var(--color-primary);">
+           🆕 ${newCount} empresa${newCount > 1 ? "s" : ""} com acesso ativo aguardando contrato — veja os cards destacados abaixo.
+         </div>`
+      : "";
+
     wrap.innerHTML = `
       <div class="card" style="margin-bottom:20px;">
         <div class="card-header">
@@ -241,6 +264,7 @@
           <button class="btn btn-primary btn-sm" id="btn-new-company">+ Nova Empresa</button>
         </div>
       </div>
+      ${alertBanner}
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:16px;">
         ${cards}
       </div>`;

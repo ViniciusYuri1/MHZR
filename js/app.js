@@ -63,7 +63,7 @@
   function renderUserBox() {
     document.getElementById("user-avatar").textContent = user.avatar || user.name.slice(0, 2).toUpperCase();
     document.getElementById("user-name").textContent = user.name;
-    document.getElementById("user-role").textContent = user.role === "admin" ? "Administrador" : "Funcionário";
+    document.getElementById("user-role").textContent = user.role === "admin" ? "Administrador" : user.role === "company" ? "Portal Empresa" : "Funcionário";
   }
 
   function renderNotifications() {
@@ -78,6 +78,19 @@
     const panel = document.getElementById("notif-panel");
     const dot = document.getElementById("notif-dot");
     const items = [];
+
+    /* Notificações para admin: empresas com acesso ativo mas sem contrato */
+    if (user.role === "admin") {
+      const allCompanies = DB.Companies.list();
+      const allUsers     = DB.Users.list();
+      allCompanies.forEach((co) => {
+        const hasPortalUser = allUsers.some((u) => u.role === "company" && u.companyId === co.id);
+        const hasCtr = (co.contractText && co.contractText.trim()) || co.contractFile;
+        if (hasPortalUser && !hasCtr) {
+          items.push(`<div class="notif-item" style="cursor:pointer;" onclick="window.location.hash='#/financial'">🏢 <strong>${UI.escapeHtml(co.name)}</strong> aguarda contrato<div class="notif-time">Acesso ativo sem contrato cadastrado</div></div>`);
+        }
+      });
+    }
 
     overdue.forEach((t) =>
       items.push(`<div class="notif-item">🔴 <strong>${UI.escapeHtml(t.title)}</strong> está atrasada<div class="notif-time">Prazo: ${UI.formatDate(t.dueDate)}</div></div>`)
