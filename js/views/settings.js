@@ -96,15 +96,15 @@
   }
 
   function databaseSectionHtml() {
-    const db = DB.Settings.get();
+    const hasLegacy = DB.hasLegacyLocalData();
     return `
       <div class="card">
-        <div class="card-header"><h3 class="card-title">Banco de Dados (Excel)</h3></div>
+        <div class="card-header"><h3 class="card-title">Banco de Dados</h3></div>
         <div class="card-pad flex-col gap-3">
           <p class="text-sm text-muted">
-            Os dados do sistema são mantidos localmente e podem ser exportados para uma planilha Excel
-            (.xlsx) como backup, ou importados para restaurar/atualizar usuários, tarefas e equipes.
-            Esta camada está preparada para futura substituição por uma API real.
+            Os dados do sistema ficam no Supabase (banco central na nuvem) e são compartilhados
+            por toda a equipe. Você pode exportar um backup em Excel (.xlsx) ou importar uma
+            planilha para atualizar tarefas em lote.
           </p>
           <div class="flex gap-2" style="flex-wrap:wrap;">
             <button class="btn btn-secondary" id="export-excel-btn">⬇️ Exportar para Excel</button>
@@ -112,8 +112,9 @@
               ⬆️ Importar do Excel
               <input type="file" id="import-excel-input" accept=".xlsx,.xls" style="display:none;" />
             </label>
-            <button class="btn btn-ghost" id="reset-data-btn">↺ Restaurar dados de demonstração</button>
+            ${hasLegacy ? `<button class="btn btn-ghost" id="migrate-local-btn">☁️ Enviar dados antigos deste navegador</button>` : ""}
           </div>
+          ${hasLegacy ? `<p class="text-sm text-muted">Este navegador ainda guarda dados da versão antiga (localStorage). O botão acima envia empresas, boletos, equipes e tarefas para o Supabase — faça isso apenas uma vez, no navegador que tinha os dados reais.</p>` : ""}
         </div>
       </div>`;
   }
@@ -139,7 +140,7 @@
   }
 
   function bindEvents(container, ctx) {
-    container.querySelector("#save-profile").addEventListener("click", () => {
+    container.querySelector("#save-profile").addEventListener("click", async () => {
       const name = container.querySelector("#profile-name").value.trim();
       const email = container.querySelector("#profile-email").value.trim();
       const password = container.querySelector("#profile-password").value.trim();
@@ -149,7 +150,11 @@
       }
       const patch = { name, email };
       if (password) patch.password = password;
-      DB.Users.update(ctx.user.id, patch);
+      const result = await DB.Users.update(ctx.user.id, patch);
+      if (!result.ok) {
+        UI.toast(result.message || "Não foi possível atualizar o perfil.", "error");
+        return;
+      }
       UI.toast("Perfil atualizado com sucesso.", "success");
       document.getElementById("user-name").textContent = name;
     });
@@ -209,13 +214,18 @@
         });
       });
 
-      container.querySelector("#reset-data-btn").addEventListener("click", () => {
-        if (UI.confirmDialog("Isso vai restaurar os dados de demonstração originais e descartar alterações locais. Continuar?")) {
-          DB.resetDatabase();
-          UI.toast("Dados de demonstração restaurados.", "success");
+      const migrateBtn = container.querySelector("#migrate-local-btn");
+      if (migrateBtn) {
+        migrateBtn.addEventListener("click", async () => {
+          if (!UI.confirmDialog("Enviar os dados antigos deste navegador (empresas, boletos, equipes e tarefas) para o Supabase? Registros com o mesmo ID serão sobrescritos.")) return;
+          migrateBtn.disabled = true;
+          migrateBtn.textContent = "Enviando...";
+          const result = await DB.importLegacyLocal();
+          UI.toast(result.message, result.ok ? "success" : "error");
+          migrateBtn.disabled = false;
           render(container, ctx);
-        }
-      });
+        });
+      }
     }
   }
 

@@ -1,14 +1,23 @@
 /* ==========================================================================
-   auth.js — Lógica da tela de login / cadastro de empresa
+   auth.js — Lógica da tela de login / cadastro de empresa (Supabase Auth)
    ========================================================================== */
 
 (function () {
   "use strict";
 
-  if (DB.getCurrentUser()) {
-    window.location.href = "app.html";
-    return;
+  // ── aviso de configuração ausente ───────────────────────────────────────
+  if (!DB.configured) {
+    const box = document.getElementById("login-error");
+    if (box) {
+      box.textContent = "Sistema não configurado: edite js/supabase-config.js com a URL e a anon key do projeto Supabase.";
+      box.classList.add("visible");
+    }
   }
+
+  // ── sessão já ativa? vai direto para o app ──────────────────────────────
+  DB.init().then((user) => {
+    if (user) window.location.href = "app.html";
+  });
 
   // ── helpers de tela ──────────────────────────────────────────────────────
   const screenLogin    = document.getElementById("screen-login");
@@ -39,7 +48,6 @@
   const passInput  = document.getElementById("password");
   const submitBtn  = document.getElementById("login-submit");
   const toggleBtn  = document.getElementById("toggle-pass");
-  const rememberInput = { checked: false };
 
   toggleBtn.addEventListener("click", () => {
     const hide = passInput.type === "password";
@@ -49,29 +57,24 @@
 
   document.getElementById("forgot-link").addEventListener("click", (e) => {
     e.preventDefault();
-    const email = prompt("Informe seu e-mail cadastrado para receber as instruções de recuperação de senha:");
-    if (email) {
-      UI.toast("Se o e-mail existir em nossa base, enviaremos as instruções de recuperação.", "success");
-    }
+    UI.toast("Peça ao administrador para redefinir sua senha na tela Equipe.", "success");
   });
 
-  form.addEventListener("submit", (e) => {
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
     errorBox.classList.remove("visible");
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<span class="spinner"></span> Entrando...';
 
-    setTimeout(() => {
-      const result = DB.login(emailInput.value.trim(), passInput.value, rememberInput.checked);
-      if (!result.ok) {
-        errorBox.textContent = result.message;
-        errorBox.classList.add("visible");
-        submitBtn.disabled = false;
-        submitBtn.textContent = "Entrar";
-        return;
-      }
-      window.location.href = "app.html";
-    }, 450);
+    const result = await DB.login(emailInput.value.trim(), passInput.value);
+    if (!result.ok) {
+      errorBox.textContent = result.message;
+      errorBox.classList.add("visible");
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Entrar";
+      return;
+    }
+    window.location.href = "app.html";
   });
 
   // ── CADASTRO DE EMPRESA ──────────────────────────────────────────────────
@@ -92,7 +95,7 @@
     regError.classList.add("visible");
   }
 
-  regForm.addEventListener("submit", (e) => {
+  regForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     regError.classList.remove("visible");
 
@@ -108,62 +111,18 @@
     if (pass.length < 6) return showRegError("A senha deve ter pelo menos 6 caracteres.");
     if (pass !== pass2)  return showRegError("As senhas não coincidem.");
 
-    const existing = DB.Users.list().find((u) => u.email.toLowerCase() === email.toLowerCase());
-    if (existing) return showRegError("Este e-mail já está cadastrado. Faça login.");
-
     regSubmit.disabled = true;
     regSubmit.innerHTML = '<span class="spinner"></span> Criando acesso...';
 
-    setTimeout(() => {
-      try {
-        /* Reutiliza empresa existente com o mesmo nome (evita duplicatas) */
-        let co = DB.Companies.list().find(
-          (c) => c.name.trim().toLowerCase() === name.trim().toLowerCase()
-        );
-        if (!co) {
-          co = DB.Companies.create({
-            name,
-            cnpj: cnpj || "",
-            phone: phone || "",
-            status: "ativo",
-            contractText: "",
-            contractFile: null,
-            contractSignedAt: null,
-            contractSignedBy: null,
-          });
-        }
+    const result = await DB.signUpCompany({ name, email, password: pass, cnpj, phone });
+    if (!result.ok) {
+      showRegError(result.message);
+      regSubmit.disabled = false;
+      regSubmit.textContent = "Criar acesso";
+      if (result.needsConfirm) showLogin();
+      return;
+    }
 
-        const initials = name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
-
-        DB.Users.create({
-          name,
-          email,
-          password: pass,
-          role: "company",
-          companyId: co.id,
-          team: null,
-          position: "Portal Empresa",
-          avatar: initials,
-          status: "offline",
-          permissions: ["boletos:own"],
-          performance: 0,
-        });
-
-        const result = DB.login(email, pass, false);
-        if (!result.ok) {
-          showRegError("Cadastro criado, mas não foi possível entrar automaticamente. Faça login.");
-          regSubmit.disabled = false;
-          regSubmit.textContent = "Criar acesso";
-          showLogin();
-          return;
-        }
-
-        window.location.href = "app.html";
-      } catch (err) {
-        showRegError("Erro ao criar cadastro. Tente novamente.");
-        regSubmit.disabled = false;
-        regSubmit.textContent = "Criar acesso";
-      }
-    }, 500);
+    window.location.href = "app.html";
   });
 })();

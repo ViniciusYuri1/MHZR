@@ -200,10 +200,19 @@
   /* PORTAL PRINCIPAL (BOLETOS)                                         */
   /* ================================================================= */
 
+  /* Evita loop de recarga: depois de um reload bem-sucedido, considera os
+     dados frescos por alguns segundos antes de buscar de novo no servidor */
+  let freshUntil = 0;
+
   window.Views.portal = function (container, ctx) {
     /* Garante que os dados reflitam qualquer alteração feita pelo admin
        (ex.: contrato anexado, boleto criado) enquanto esta aba estava aberta */
-    DB.reload();
+    if (Date.now() > freshUntil) {
+      DB.reload().then(() => {
+        freshUntil = Date.now() + 5000;
+        if (container.isConnected) window.Views.portal(container, ctx);
+      });
+    }
     const company = ctx.user.companyId ? DB.Companies.get(ctx.user.companyId) : null;
 
     /* Portão de contrato: se existe texto OU arquivo e ainda não foi assinado → tela de assinatura */

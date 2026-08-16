@@ -181,7 +181,7 @@
     overlay.querySelector("#um-close").addEventListener("click", UI.hideModal);
     overlay.querySelector("#um-cancel").addEventListener("click", UI.hideModal);
 
-    overlay.querySelector("#um-save").addEventListener("click", () => {
+    overlay.querySelector("#um-save").addEventListener("click", async () => {
       const name = overlay.querySelector("#um-name").value.trim();
       const email = overlay.querySelector("#um-email").value.trim();
       if (!name || !email) {
@@ -206,17 +206,30 @@
       const password = overlay.querySelector("#um-password").value.trim();
       if (password) payload.password = password;
 
+      const saveBtn = overlay.querySelector("#um-save");
+      saveBtn.disabled = true;
+      saveBtn.textContent = "Salvando...";
+
+      let result;
       if (isNew) {
         if (!password) {
           UI.toast("Defina uma senha para o novo usuário.", "error");
+          saveBtn.disabled = false;
+          saveBtn.textContent = "Criar Usuário";
           return;
         }
-        DB.Users.create(Object.assign({ status: "offline", performance: 0 }, payload));
-        UI.toast("Usuário criado com sucesso.", "success");
+        result = await DB.Users.create(Object.assign({ status: "offline", performance: 0 }, payload));
       } else {
-        DB.Users.update(user.id, payload);
-        UI.toast("Usuário atualizado com sucesso.", "success");
+        result = await DB.Users.update(user.id, payload);
       }
+
+      if (!result.ok) {
+        UI.toast(result.message || "Não foi possível salvar o usuário.", "error");
+        saveBtn.disabled = false;
+        saveBtn.textContent = isNew ? "Criar Usuário" : "Salvar Alterações";
+        return;
+      }
+      UI.toast(isNew ? "Usuário criado com sucesso." : "Usuário atualizado com sucesso.", "success");
       UI.hideModal();
       if (onSaved) onSaved();
     });
@@ -280,9 +293,13 @@
       btn.addEventListener("click", () => openUserModal(ctx, btn.dataset.editUser, reRender));
     });
     container.querySelectorAll("[data-delete-user]").forEach((btn) => {
-      btn.addEventListener("click", () => {
+      btn.addEventListener("click", async () => {
         if (UI.confirmDialog("Tem certeza que deseja excluir este usuário?")) {
-          DB.Users.remove(btn.dataset.deleteUser);
+          const result = await DB.Users.remove(btn.dataset.deleteUser);
+          if (!result.ok) {
+            UI.toast(result.message || "Não foi possível excluir o usuário.", "error");
+            return;
+          }
           UI.toast("Usuário excluído.", "success");
           reRender();
         }

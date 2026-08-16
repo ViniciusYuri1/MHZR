@@ -1,15 +1,19 @@
 /* ==========================================================================
    data.js — Camada de dados do Sistema de Gestão de Tarefas
-   Banco de dados: simulado em localStorage (runtime) com import/export
-   para planilhas Excel (.xlsx) via SheetJS, preparado para futura troca
-   por uma API real (ver objeto DB.api no final do arquivo).
+   Banco de dados: Supabase (Postgres + Auth + RLS).
+
+   Estratégia: em DB.init() todo o conjunto de dados visível ao usuário é
+   carregado para um cache em memória (`db`), então as LEITURAS continuam
+   síncronas — as views não mudaram. As MUTAÇÕES atualizam o cache e enviam
+   a alteração ao Supabase em segundo plano (com toast em caso de falha).
+   Operações de usuário/senha são assíncronas (RPCs com SECURITY DEFINER).
    ========================================================================== */
 
 (function (global) {
   "use strict";
 
-  const STORAGE_KEY = "sgt_database_v1";
-  const SESSION_KEY = "sgt_session";
+  const LEGACY_STORAGE_KEY = "sgt_database_v1"; // usado apenas pela importação
+  const THEME_KEY = "sgt_theme";
 
   /* ------------------------------------------------------------------ */
   /* Utilidades                                                         */
@@ -31,423 +35,248 @@
   }
 
   function clone(obj) {
-    return JSON.parse(JSON.stringify(obj));
+    return obj === undefined ? undefined : JSON.parse(JSON.stringify(obj));
   }
 
-  /* ------------------------------------------------------------------ */
-  /* Seed: Empresas e Boletos                                           */
-  /* ------------------------------------------------------------------ */
-
-  function seedCompanies() {
-    return [
-      { id: "co_1", name: "Panobianco dos Casa",   cnpj: "", contact: "", email: "", phone: "", status: "ativo", since: "", contractText: "", contractFile: null, contractSignedAt: null, contractSignedBy: null },
-      { id: "co_2", name: "Panobianco Alvarenga",  cnpj: "", contact: "", email: "", phone: "", status: "ativo", since: "", contractText: "", contractFile: null, contractSignedAt: null, contractSignedBy: null },
-      { id: "co_3", name: "Panobianco Raposo",     cnpj: "", contact: "", email: "", phone: "", status: "ativo", since: "", contractText: "", contractFile: null, contractSignedAt: null, contractSignedBy: null },
-      { id: "co_4", name: "Panobianco Castelo",    cnpj: "", contact: "", email: "", phone: "", status: "ativo", since: "", contractText: "", contractFile: null, contractSignedAt: null, contractSignedBy: null },
-      { id: "co_5", name: "Panobianco Riberão",    cnpj: "", contact: "", email: "", phone: "", status: "ativo", since: "", contractText: "", contractFile: null, contractSignedAt: null, contractSignedBy: null },
-      { id: "co_6", name: "Power Pedal",           cnpj: "", contact: "", email: "", phone: "", status: "ativo", since: "", contractText: "", contractFile: null, contractSignedAt: null, contractSignedBy: null },
-      { id: "co_7", name: "Hype Jump",             cnpj: "", contact: "", email: "", phone: "", status: "ativo", since: "", contractText: "", contractFile: null, contractSignedAt: null, contractSignedBy: null },
-      { id: "co_8", name: "Vita Spinning",         cnpj: "", contact: "", email: "", phone: "", status: "ativo", since: "", contractText: "", contractFile: null, contractSignedAt: null, contractSignedBy: null }
-    ];
-  }
-
-  function seedBoletos() {
-    return [];
-  }
-
-  /* ------------------------------------------------------------------ */
-  /* Seed inicial do banco de dados                                     */
-  /* ------------------------------------------------------------------ */
-
-  function seedDatabase() {
-    const teams = [
-      { id: "team_1", name: "Equipe Principal", lead: "user_1", color: "#7c3aed" }
-    ];
-
-    const users = [
-      {
-        id: "user_1",
-        name: "Murillo",
-        email: "murillo@empresa.com",
-        password: "admin123",
-        role: "admin",
-        team: "team_1",
-        position: "Administrador",
-        status: "online",
-        avatar: "MU",
-        permissions: ["all"],
-        performance: 95,
-        createdAt: todayISO(-120)
-      },
-      {
-        id: "user_2",
-        name: "Gustavo",
-        email: "gustavo@empresa.com",
-        password: "123456",
-        role: "employee",
-        team: "team_1",
-        position: "Desenvolvedor",
-        status: "online",
-        avatar: "GU",
-        permissions: ["tasks:own"],
-        performance: 88,
-        createdAt: todayISO(-100)
-      },
-      {
-        id: "user_3",
-        name: "Larissa",
-        email: "larissa@empresa.com",
-        password: "123456",
-        role: "employee",
-        team: "team_1",
-        position: "Designer & Marketing",
-        status: "online",
-        avatar: "LA",
-        permissions: ["tasks:own"],
-        performance: 90,
-        createdAt: todayISO(-100)
-      },
-      /* Usuários de empresa cadastrados via formulário de registro */
-    ];
-
-    const taskSeeds = [
-      {
-        title: "Definir escopo da Sprint 14",
-        description: "Levantar requisitos com stakeholders e fechar backlog priorizado.",
-        assignee: "user_2",
-        priority: "alta",
-        status: "concluida",
-        startOffset: -10,
-        dueOffset: -3,
-        tags: ["planejamento", "sprint"],
-        checklist: [
-          { text: "Reunião com stakeholders", done: true },
-          { text: "Priorizar backlog", done: true },
-          { text: "Validar com diretoria", done: true }
-        ],
-        timeLogged: 6
-      },
-      {
-        title: "Redesenhar tela de checkout",
-        description: "Aplicar novo design system no fluxo de checkout do app mobile.",
-        assignee: "user_3",
-        priority: "alta",
-        status: "em_andamento",
-        startOffset: -5,
-        dueOffset: 2,
-        tags: ["design", "mobile"],
-        checklist: [
-          { text: "Wireframes", done: true },
-          { text: "Protótipo navegável", done: true },
-          { text: "Testes de usabilidade", done: false }
-        ],
-        timeLogged: 9
-      },
-      {
-        title: "Implementar autenticação 2FA",
-        description: "Adicionar verificação em duas etapas para login de usuários.",
-        assignee: "user_2",
-        priority: "urgente",
-        status: "em_andamento",
-        startOffset: -4,
-        dueOffset: 1,
-        tags: ["backend", "segurança"],
-        checklist: [
-          { text: "Escolher provedor de SMS/Email", done: true },
-          { text: "Implementar geração de código", done: false },
-          { text: "Testes de integração", done: false }
-        ],
-        timeLogged: 5
-      },
-      {
-        title: "Campanha de lançamento Q3",
-        description: "Planejar e executar campanha multicanal para o lançamento do produto.",
-        assignee: "user_3",
-        priority: "media",
-        status: "em_revisao",
-        startOffset: -8,
-        dueOffset: -1,
-        tags: ["marketing", "campanha"],
-        checklist: [
-          { text: "Definir personas", done: true },
-          { text: "Criar materiais gráficos", done: true },
-          { text: "Aprovação final", done: false }
-        ],
-        timeLogged: 12
-      },
-      {
-        title: "Relatório de métricas mensais",
-        description: "Consolidar métricas de marketing do último mês para apresentação.",
-        assignee: "user_3",
-        priority: "baixa",
-        status: "nao_iniciada",
-        startOffset: 0,
-        dueOffset: 5,
-        tags: ["relatório"],
-        checklist: [],
-        timeLogged: 0
-      },
-      {
-        title: "Corrigir bug no cálculo de frete",
-        description: "Valores de frete divergentes para CEPs do Nordeste.",
-        assignee: "user_2",
-        priority: "urgente",
-        status: "nao_iniciada",
-        startOffset: 0,
-        dueOffset: -2,
-        tags: ["bug", "backend"],
-        checklist: [
-          { text: "Reproduzir o bug", done: false },
-          { text: "Corrigir cálculo", done: false }
-        ],
-        timeLogged: 1
-      },
-      {
-        title: "Criar protótipo do dashboard analítico",
-        description: "Protótipo de alta fidelidade para o novo módulo de analytics.",
-        assignee: "user_3",
-        priority: "media",
-        status: "em_andamento",
-        startOffset: -3,
-        dueOffset: 6,
-        tags: ["design", "analytics"],
-        checklist: [
-          { text: "Wireframes", done: true },
-          { text: "UI Kit", done: false }
-        ],
-        timeLogged: 4
-      },
-      {
-        title: "Revisão de contrato com fornecedor",
-        description: "Revisar cláusulas contratuais antes da renovação anual.",
-        assignee: "user_1",
-        priority: "media",
-        status: "concluida",
-        startOffset: -15,
-        dueOffset: -10,
-        tags: ["jurídico"],
-        checklist: [],
-        timeLogged: 3
-      },
-      {
-        title: "Atualizar documentação da API",
-        description: "Documentar novos endpoints criados no último sprint.",
-        assignee: "user_2",
-        priority: "baixa",
-        status: "em_revisao",
-        startOffset: -6,
-        dueOffset: 3,
-        tags: ["documentação", "backend"],
-        checklist: [{ text: "Revisar endpoints", done: true }],
-        timeLogged: 2
-      },
-      {
-        title: "Planejar posts redes sociais",
-        description: "Calendário editorial para as próximas duas semanas.",
-        assignee: "user_3",
-        priority: "baixa",
-        status: "concluida",
-        startOffset: -7,
-        dueOffset: -4,
-        tags: ["marketing", "social"],
-        checklist: [],
-        timeLogged: 5
-      },
-      {
-        title: "Auditoria de acessibilidade",
-        description: "Avaliar conformidade WCAG no site institucional.",
-        assignee: "user_3",
-        priority: "media",
-        status: "nao_iniciada",
-        startOffset: 1,
-        dueOffset: 10,
-        tags: ["design", "qualidade"],
-        checklist: [],
-        timeLogged: 0
-      },
-      {
-        title: "Treinamento de onboarding",
-        description: "Criar trilha de treinamento para novos colaboradores.",
-        assignee: "user_2",
-        priority: "media",
-        status: "em_andamento",
-        startOffset: -2,
-        dueOffset: 8,
-        tags: ["rh", "treinamento"],
-        checklist: [{ text: "Roteiro do treinamento", done: true }],
-        timeLogged: 3
-      }
-    ];
-
-    const tasks = taskSeeds.map((t, idx) => ({
-      id: "task_" + (idx + 1),
-      title: t.title,
-      description: t.description,
-      assignee: t.assignee,
-      priority: t.priority,
-      status: t.status,
-      startDate: todayISO(t.startOffset),
-      dueDate: todayISO(t.dueOffset),
-      tags: t.tags,
-      checklist: t.checklist,
-      comments: [],
-      attachments: [],
-      timeLogged: t.timeLogged,
-      archived: false,
-      createdAt: todayISO(t.startOffset - 1),
-      updatedAt: todayISO(t.startOffset)
-    }));
-
-    const activities = [
-      { id: uid("act"), user: "user_2", text: "concluiu a tarefa Definir escopo da Sprint 14", date: todayISO(-3) },
-      { id: uid("act"), user: "user_3", text: "atualizou o status de Redesenhar tela de checkout", date: todayISO(-1) },
-      { id: uid("act"), user: "user_2", text: "comentou em Implementar autenticação 2FA", date: todayISO(0) },
-      { id: uid("act"), user: "user_3", text: "moveu Campanha de lançamento Q3 para Em revisão", date: todayISO(-1) },
-      { id: uid("act"), user: "user_1", text: "criou a equipe Equipe Principal", date: todayISO(-100) }
-    ];
-
-    const settings = {
+  function defaultSettings() {
+    return {
       companyName: "Minha Empresa",
       logo: "",
-      theme: "light",
-      notifications: {
-        email: true,
-        push: true,
-        deadlineReminder: true,
-        dailySummary: false
-      }
+      theme: localTheme(),
+      notifications: { email: true, push: true, deadlineReminder: true, dailySummary: false }
     };
+  }
 
-    const companies = seedCompanies();
-    const boletos   = seedBoletos();
-
-    return { users, teams, tasks, activities, settings, companies, boletos, auditLog: [], meta: { version: 1, lastSync: null } };
+  function localTheme() {
+    try { return localStorage.getItem(THEME_KEY) || "light"; } catch (e) { return "light"; }
   }
 
   /* ------------------------------------------------------------------ */
-  /* Persistência (localStorage = "banco de dados" em runtime)          */
+  /* Cache em memória                                                    */
   /* ------------------------------------------------------------------ */
 
-  function load() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) {
-        const fresh = seedDatabase();
-        save(fresh);
-        return fresh;
-      }
-      const parsed = JSON.parse(raw);
-      let dirty = false;
-      if (!parsed.companies) { parsed.companies = seedCompanies(); dirty = true; }
-      if (!parsed.boletos)   { parsed.boletos   = seedBoletos();   dirty = true; }
-      /* Migração v2: garantir usuários do portal de empresas por ID.
-         Roda sempre que schemaVersion < 2, independente do conteúdo. */
-      const schemaVer = (parsed.meta && parsed.meta.schemaVersion) || 1;
-      if (schemaVer < 2) {
-        if (!parsed.meta) parsed.meta = {};
-        parsed.meta.schemaVersion = 2;
-        dirty = true;
-      }
-      /* Migração v3: adicionar campos de contrato às empresas existentes */
-      const schemaVer3 = (parsed.meta && parsed.meta.schemaVersion) || 1;
-      /* (schemaVer3 ainda é usado abaixo — não redeclarar) */
-      if (schemaVer3 < 3) {
-        (parsed.companies || []).forEach(function(co) {
-          if (!('contractText'     in co)) co.contractText     = "";
-          if (!('contractFile'     in co)) co.contractFile     = null;
-          if (!('contractSignedAt' in co)) co.contractSignedAt = null;
-          if (!('contractSignedBy' in co)) co.contractSignedBy = null;
-        });
-        if (!parsed.meta) parsed.meta = {};
-        parsed.meta.schemaVersion = 3;
-        dirty = true;
-      }
-      /* Migração v4: adicionar campo companyId às tarefas existentes */
-      if (schemaVer3 < 4) {
-        (parsed.tasks || []).forEach(function(t) {
-          if (!('companyId' in t)) t.companyId = null;
-        });
-        if (!parsed.meta) parsed.meta = {};
-        parsed.meta.schemaVersion = 4;
-        dirty = true;
-      }
-      /* Migração v5: inicializar auditLog */
-      if (!parsed.auditLog) { parsed.auditLog = []; dirty = true; }
-      if (dirty) save(parsed);
-      return parsed;
-    } catch (e) {
-      console.error("Falha ao carregar banco de dados, recriando seed.", e);
-      const fresh = seedDatabase();
-      save(fresh);
-      return fresh;
+  let db = {
+    users: [],
+    teams: [],
+    tasks: [],
+    activities: [],
+    settings: defaultSettings(),
+    companies: [],
+    boletos: [],
+    auditLog: [],
+    meta: { lastSync: null }
+  };
+
+  let currentUser = null;
+
+  /* ------------------------------------------------------------------ */
+  /* Supabase — helpers                                                  */
+  /* ------------------------------------------------------------------ */
+
+  const configured = !!global.SB;
+
+  function sb() {
+    if (!global.SB) throw new Error("Supabase não configurado (js/supabase-config.js).");
+    return global.SB;
+  }
+
+  function syncError(where, error) {
+    console.error("[DB sync] " + where, error);
+    if (global.UI && global.UI.toast) {
+      global.UI.toast("Falha ao salvar no servidor: " + (error && error.message ? error.message : where), "error");
     }
   }
 
-  function save(db) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+  /* Envia (upsert) um objeto para uma tabela-documento, em segundo plano */
+  function pushRow(table, obj) {
+    sb()
+      .from(table)
+      .upsert({ id: obj.id, data: obj })
+      .then(({ error }) => { if (error) syncError(table + "/" + obj.id, error); });
   }
 
-  let db = load();
+  function deleteRow(table, id) {
+    sb()
+      .from(table)
+      .delete()
+      .eq("id", id)
+      .then(({ error }) => { if (error) syncError("delete " + table + "/" + id, error); });
+  }
 
-  function persist() {
-    save(db);
+  /* Mensagens de erro amigáveis */
+  function friendlyError(error) {
+    if (!error) return "Erro desconhecido.";
+    const msg = error.message || String(error);
+    if (msg.indexOf("Invalid login credentials") !== -1) return "E-mail ou senha inválidos.";
+    if (msg.indexOf("Email not confirmed") !== -1) return "E-mail ainda não confirmado. Verifique sua caixa de entrada.";
+    if (msg.indexOf("User already registered") !== -1) return "Este e-mail já está cadastrado. Faça login.";
+    if (msg.indexOf("Password should be") !== -1) return "A senha deve ter pelo menos 6 caracteres.";
+    if (msg.indexOf("rate limit") !== -1 || msg.indexOf("Rate limit") !== -1) return "Muitas tentativas. Aguarde alguns minutos e tente de novo.";
+    if (msg.indexOf("Failed to fetch") !== -1) return "Sem conexão com o servidor. Verifique sua internet.";
+    return msg;
   }
 
   /* ------------------------------------------------------------------ */
-  /* Sessão / Autenticação                                              */
+  /* Perfis <-> usuários                                                 */
   /* ------------------------------------------------------------------ */
 
-  function login(email, password, remember) {
-    const user = db.users.find(
-      (u) => u.email.toLowerCase() === String(email).toLowerCase() && u.password === password
+  function profileToUser(row) {
+    return Object.assign(
+      { id: row.id, role: row.role, companyId: row.company_id || null },
+      row.data || {}
     );
-    if (!user) return { ok: false, message: "E-mail ou senha inválidos." };
-
-    user.status = "online";
-    persist();
-
-    const session = { userId: user.id, loggedAt: new Date().toISOString() };
-    // Sessão sempre em sessionStorage — expira ao fechar a aba ou sair da página
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
-    addAuditLog({ action: "Login", type: "Sessão", targetId: user.id, targetName: user.name, targetRole: user.position || user.role, authorOverride: sanitizeUser(user) });
-    return { ok: true, user: sanitizeUser(user) };
   }
 
-  function logout() {
-    const session = getSession();
-    if (session) {
-      const user = db.users.find((u) => u.id === session.userId);
-      if (user) {
-        addAuditLog({ action: "Logout", type: "Sessão", targetId: user.id, targetName: user.name, targetRole: user.position || user.role, authorOverride: sanitizeUser(user) });
-        user.status = "offline";
-        persist();
-      }
-    }
-    localStorage.removeItem(SESSION_KEY);
-    sessionStorage.removeItem(SESSION_KEY);
+  /* Extrai o jsonb `data` de um objeto de usuário (sem campos de coluna) */
+  function userDataOf(user) {
+    const data = clone(user);
+    delete data.id;
+    delete data.role;
+    delete data.companyId;
+    delete data.password;
+    return data;
   }
 
-  function getSession() {
-    const raw = sessionStorage.getItem(SESSION_KEY);
-    if (!raw) return null;
+  function profileRowOf(user) {
+    return { role: user.role, company_id: user.companyId || null, data: userDataOf(user) };
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Bootstrap: sessão + carga completa do cache                         */
+  /* ------------------------------------------------------------------ */
+
+  async function fetchCurrentProfile(userId) {
+    const { data, error } = await sb().from("profiles").select("*").eq("id", userId).maybeSingle();
+    if (error) throw error;
+    currentUser = data ? profileToUser(data) : null;
+    return currentUser;
+  }
+
+  async function fetchAll() {
+    const s = sb();
+    const [profiles, teams, companies, boletos, tasks, activities, audit, settings] =
+      await Promise.all([
+        s.from("profiles").select("*"),
+        s.from("teams").select("id,data"),
+        s.from("companies").select("id,data"),
+        s.from("boletos").select("id,data"),
+        s.from("tasks").select("id,data"),
+        s.from("activities").select("id,data").order("updated_at", { ascending: false }).limit(50),
+        s.from("audit_log").select("id,data").order("updated_at", { ascending: false }).limit(1000),
+        s.from("app_settings").select("id,data").eq("id", "main").maybeSingle()
+      ]);
+
+    const failed = [profiles, teams, companies, boletos, tasks, activities, audit].find((r) => r.error);
+    if (failed) throw failed.error;
+
+    const rowData = (r) => (r.data || []).map((x) => x.data);
+
+    db.users      = (profiles.data || []).map(profileToUser);
+    db.teams      = rowData(teams);
+    db.companies  = rowData(companies);
+    db.boletos    = rowData(boletos);
+    db.tasks      = rowData(tasks);
+    db.activities = rowData(activities);
+    db.auditLog   = rowData(audit);
+    db.settings   = Object.assign(
+      defaultSettings(),
+      (settings && settings.data && settings.data.data) || {},
+      { theme: localTheme() }
+    );
+    db.meta.lastSync = new Date().toISOString();
+  }
+
+  /* Inicializa a sessão e o cache. Retorna o usuário logado ou null. */
+  async function init() {
+    if (!configured) return null;
+    const { data } = await sb().auth.getSession();
+    const session = data && data.session;
+    if (!session) return null;
     try {
-      return JSON.parse(raw);
+      await fetchCurrentProfile(session.user.id);
+      if (!currentUser) {
+        await sb().auth.signOut();
+        return null;
+      }
+      await fetchAll();
+      return clone(currentUser);
     } catch (e) {
+      console.error("[DB.init]", e);
       return null;
     }
   }
 
-  function getCurrentUser() {
-    const session = getSession();
-    if (!session) return null;
-    const user = db.users.find((u) => u.id === session.userId);
-    return user ? sanitizeUser(user) : null;
+  /* Recarrega tudo do servidor (ex.: botão atualizar do portal) */
+  function reload() {
+    return fetchAll().catch((e) => syncError("reload", e));
   }
 
-  function sanitizeUser(user) {
-    const copy = clone(user);
-    delete copy.password;
-    return copy;
+  /* ------------------------------------------------------------------ */
+  /* Sessão / Autenticação                                               */
+  /* ------------------------------------------------------------------ */
+
+  async function login(email, password) {
+    if (!configured) return { ok: false, message: "Sistema não configurado (js/supabase-config.js)." };
+    const { data, error } = await sb().auth.signInWithPassword({ email: email, password: password });
+    if (error) return { ok: false, message: friendlyError(error) };
+    try {
+      await fetchCurrentProfile(data.user.id);
+    } catch (e) {
+      return { ok: false, message: "Não foi possível carregar seu perfil: " + friendlyError(e) };
+    }
+    if (!currentUser) {
+      await sb().auth.signOut();
+      return { ok: false, message: "Usuário sem perfil no sistema. Contate o administrador." };
+    }
+    currentUser.status = "online";
+    sb().from("profiles").update({ data: userDataOf(currentUser) }).eq("id", currentUser.id)
+      .then(({ error: e }) => { if (e) console.warn("[login status]", e); });
+    addAuditLog({ action: "Login", type: "Sessão", targetId: currentUser.id, targetName: currentUser.name, targetRole: currentUser.position || currentUser.role });
+    return { ok: true, user: clone(currentUser) };
+  }
+
+  async function logout() {
+    if (currentUser) {
+      addAuditLog({ action: "Logout", type: "Sessão", targetId: currentUser.id, targetName: currentUser.name, targetRole: currentUser.position || currentUser.role });
+      currentUser.status = "offline";
+      try {
+        await sb().from("profiles").update({ data: userDataOf(currentUser) }).eq("id", currentUser.id);
+      } catch (e) { /* melhor esforço */ }
+    }
+    currentUser = null;
+    try { await sb().auth.signOut(); } catch (e) { /* sessão local já foi limpa */ }
+  }
+
+  /* Cadastro público do portal (empresa cliente) */
+  async function signUpCompany({ name, email, password, cnpj, phone }) {
+    if (!configured) return { ok: false, message: "Sistema não configurado (js/supabase-config.js)." };
+    const { data, error } = await sb().auth.signUp({
+      email: email,
+      password: password,
+      options: { data: { name: name } }
+    });
+    if (error) return { ok: false, message: friendlyError(error) };
+    if (!data.session) {
+      return {
+        ok: false,
+        needsConfirm: true,
+        message: "Cadastro criado, mas o projeto exige confirmação de e-mail. Desative 'Confirm email' no Supabase ou confirme pelo link enviado."
+      };
+    }
+    const { error: rpcError } = await sb().rpc("register_company", {
+      p_name: name, p_cnpj: cnpj || "", p_phone: phone || "", p_email: email
+    });
+    if (rpcError) return { ok: false, message: friendlyError(rpcError) };
+    await fetchCurrentProfile(data.user.id);
+    return { ok: true };
+  }
+
+  function getSession() {
+    return currentUser ? { userId: currentUser.id } : null;
+  }
+
+  function getCurrentUser() {
+    return currentUser ? clone(currentUser) : null;
   }
 
   function isAdmin(user) {
@@ -464,49 +293,88 @@
   }
 
   /* ------------------------------------------------------------------ */
-  /* CRUD: Usuários                                                      */
+  /* CRUD: Usuários (assíncrono — envolve Supabase Auth via RPC)         */
   /* ------------------------------------------------------------------ */
 
   const Users = {
     list() {
-      return clone(db.users).map(sanitizeUser);
+      return clone(db.users);
     },
     get(id) {
       const u = db.users.find((x) => x.id === id);
-      return u ? sanitizeUser(u) : null;
+      return u ? clone(u) : null;
     },
-    create(data) {
-      const user = Object.assign(
-        {
-          id: uid("user"),
-          status: "offline",
-          permissions: data.role === "admin" ? ["all"] : ["tasks:own"],
-          performance: 0,
-          createdAt: todayISO()
-        },
-        data
-      );
+
+    /* Cria usuário (auth + perfil). Requer admin. Retorna {ok, user|message}. */
+    async create(data) {
+      const d = clone(data);
+      const password = d.password;
+      delete d.password;
+      d.createdAt = d.createdAt || todayISO();
+      const role = d.role || "employee";
+
+      const p_data = clone(d);
+      delete p_data.role;
+
+      const { data: newId, error } = await sb().rpc("admin_create_user", {
+        p_email: d.email,
+        p_password: password,
+        p_role: role,
+        p_data: p_data
+      });
+      if (error) return { ok: false, message: friendlyError(error) };
+
+      const user = Object.assign({ id: newId, role: role, companyId: d.companyId || null }, (function () {
+        const rest = clone(d);
+        delete rest.role;
+        delete rest.companyId;
+        return rest;
+      })());
       db.users.push(user);
-      persist();
       addAuditLog({ action: "Criação", type: "Usuário", targetId: user.id, targetName: user.name, targetRole: user.position || user.role });
-      return sanitizeUser(user);
+      return { ok: true, user: clone(user) };
     },
-    update(id, patch) {
-      const user = db.users.find((u) => u.id === id);
-      if (!user) return null;
-      Object.assign(user, patch);
-      persist();
-      addAuditLog({ action: "Edição", type: "Usuário", targetId: id, targetName: user.name, targetRole: user.position || user.role });
-      return sanitizeUser(user);
+
+    /* Atualiza perfil e, se patch.password/email, credenciais de acesso. */
+    async update(id, patch) {
+      const u = db.users.find((x) => x.id === id);
+      if (!u) return { ok: false, message: "Usuário não encontrado." };
+
+      const p = clone(patch || {});
+      const newPassword = p.password || null;
+      delete p.password;
+      const emailChanged = p.email && p.email.toLowerCase() !== (u.email || "").toLowerCase();
+
+      if (newPassword || emailChanged) {
+        const { error } = await sb().rpc("admin_update_user_credentials", {
+          p_user_id: id,
+          p_email: emailChanged ? p.email : null,
+          p_password: newPassword
+        });
+        if (error) return { ok: false, message: friendlyError(error) };
+      }
+
+      Object.assign(u, p);
+      const { error: profileError } = await sb().from("profiles").update(profileRowOf(u)).eq("id", id);
+      if (profileError) return { ok: false, message: friendlyError(profileError) };
+
+      if (currentUser && currentUser.id === id) currentUser = clone(u);
+      addAuditLog({ action: "Edição", type: "Usuário", targetId: id, targetName: u.name, targetRole: u.position || u.role });
+      return { ok: true, user: clone(u) };
     },
-    remove(id) {
-      const target = db.users.find((u) => u.id === id);
-      const tName = target ? target.name : id;
-      const tRole = target ? (target.position || target.role) : "";
-      db.users = db.users.filter((u) => u.id !== id);
-      persist();
-      addAuditLog({ action: "Exclusão", type: "Usuário", targetId: id, targetName: tName, targetRole: tRole });
-      return true;
+
+    /* Exclui usuário (auth + perfil em cascata). Requer admin. */
+    async remove(id) {
+      const target = db.users.find((x) => x.id === id);
+      const { error } = await sb().rpc("admin_delete_user", { p_user_id: id });
+      if (error) return { ok: false, message: friendlyError(error) };
+      db.users = db.users.filter((x) => x.id !== id);
+      addAuditLog({
+        action: "Exclusão", type: "Usuário", targetId: id,
+        targetName: target ? target.name : id,
+        targetRole: target ? (target.position || target.role) : ""
+      });
+      return { ok: true };
     }
   };
 
@@ -524,23 +392,23 @@
     create(data) {
       const team = Object.assign({ id: uid("team"), color: "#7c3aed" }, data);
       db.teams.push(team);
-      persist();
+      pushRow("teams", team);
       return clone(team);
     },
     update(id, patch) {
       const team = db.teams.find((t) => t.id === id);
       if (!team) return null;
       Object.assign(team, patch);
-      persist();
+      pushRow("teams", team);
       return clone(team);
     },
     remove(id) {
       db.teams = db.teams.filter((t) => t.id !== id);
-      persist();
+      deleteRow("teams", id);
       return true;
     },
     members(id) {
-      return db.users.filter((u) => u.team === id).map(sanitizeUser);
+      return db.users.filter((u) => u.team === id).map(clone);
     }
   };
 
@@ -553,9 +421,8 @@
     get(id) { return clone((db.companies || []).find((c) => c.id === id)) || null; },
     create(data) {
       const co = Object.assign({ id: uid("co"), status: "ativo" }, data);
-      db.companies = db.companies || [];
       db.companies.push(co);
-      persist();
+      pushRow("companies", co);
       addAuditLog({ action: "Criação", type: "Empresa", targetId: co.id, targetName: co.name, companyId: co.id, companyName: co.name });
       return clone(co);
     },
@@ -563,7 +430,7 @@
       const co = (db.companies || []).find((c) => c.id === id);
       if (!co) return null;
       Object.assign(co, patch);
-      persist();
+      pushRow("companies", co);
       addAuditLog({ action: "Edição", type: "Empresa", targetId: id, targetName: co.name, companyId: id, companyName: co.name });
       return clone(co);
     },
@@ -571,7 +438,7 @@
       const target = (db.companies || []).find((c) => c.id === id);
       const tName = target ? target.name : id;
       db.companies = (db.companies || []).filter((c) => c.id !== id);
-      persist();
+      deleteRow("companies", id);
       addAuditLog({ action: "Exclusão", type: "Empresa", targetId: id, targetName: tName, companyId: id, companyName: tName });
       return true;
     },
@@ -580,7 +447,7 @@
       if (!co) return null;
       co.contractSignedAt = new Date().toISOString();
       co.contractSignedBy = signerName;
-      persist();
+      pushRow("companies", co);
       addAuditLog({ action: "Assinatura", type: "Contrato", targetId: id, targetName: co.name, companyId: id, companyName: co.name, details: `Assinado por: ${signerName}` });
       return clone(co);
     },
@@ -589,7 +456,7 @@
       if (!co) return null;
       co.contractSignedAt = null;
       co.contractSignedBy = null;
-      persist();
+      pushRow("companies", co);
       addAuditLog({ action: "Redefinição", type: "Contrato", targetId: id, targetName: co.name, companyId: id, companyName: co.name });
       return clone(co);
     }
@@ -612,9 +479,8 @@
     get(id) { return clone((db.boletos || []).find((b) => b.id === id)) || null; },
     create(data) {
       const bol = Object.assign({ id: uid("bol"), paidDate: null, notes: "", status: "pendente" }, data);
-      db.boletos = db.boletos || [];
       db.boletos.push(bol);
-      persist();
+      pushRow("boletos", bol);
       const bCo = (db.companies || []).find((c) => c.id === bol.companyId);
       addAuditLog({ action: "Criação", type: "Boleto", targetId: bol.id, targetName: bol.description, companyId: bol.companyId, companyName: bCo ? bCo.name : "" });
       return clone(bol);
@@ -623,7 +489,7 @@
       const bol = (db.boletos || []).find((b) => b.id === id);
       if (!bol) return null;
       Object.assign(bol, patch);
-      persist();
+      pushRow("boletos", bol);
       const bCo = (db.companies || []).find((c) => c.id === bol.companyId);
       addAuditLog({ action: "Edição", type: "Boleto", targetId: id, targetName: bol.description, companyId: bol.companyId, companyName: bCo ? bCo.name : "" });
       return clone(bol);
@@ -634,7 +500,7 @@
       const tCoId = target ? target.companyId : null;
       const tCo = tCoId ? (db.companies || []).find((c) => c.id === tCoId) : null;
       db.boletos = (db.boletos || []).filter((b) => b.id !== id);
-      persist();
+      deleteRow("boletos", id);
       addAuditLog({ action: "Exclusão", type: "Boleto", targetId: id, targetName: tName, companyId: tCoId, companyName: tCo ? tCo.name : "" });
       return true;
     }
@@ -673,8 +539,8 @@
         data
       );
       db.tasks.push(task);
-      logActivity(getCurrentUser()?.id, `criou a tarefa "${task.title}"`);
-      persist();
+      pushRow("tasks", task);
+      logActivity(currentUser && currentUser.id, `criou a tarefa "${task.title}"`);
       const tCo = task.companyId ? (db.companies || []).find((c) => c.id === task.companyId) : null;
       addAuditLog({ action: "Criação", type: "Tarefa", targetId: task.id, targetName: task.title, companyId: task.companyId || null, companyName: tCo ? tCo.name : null });
       return clone(task);
@@ -683,7 +549,7 @@
       const task = db.tasks.find((t) => t.id === id);
       if (!task) return null;
       Object.assign(task, patch, { updatedAt: todayISO() });
-      persist();
+      pushRow("tasks", task);
       const tCo = task.companyId ? (db.companies || []).find((c) => c.id === task.companyId) : null;
       addAuditLog({ action: "Edição", type: "Tarefa", targetId: id, targetName: task.title, companyId: task.companyId || null, companyName: tCo ? tCo.name : null });
       return clone(task);
@@ -693,7 +559,7 @@
       const tName = target ? target.title : id;
       const tCo = target && target.companyId ? (db.companies || []).find((c) => c.id === target.companyId) : null;
       db.tasks = db.tasks.filter((t) => t.id !== id);
-      persist();
+      deleteRow("tasks", id);
       addAuditLog({ action: "Exclusão", type: "Tarefa", targetId: id, targetName: tName, companyId: target ? target.companyId : null, companyName: tCo ? tCo.name : null });
       return true;
     },
@@ -707,7 +573,7 @@
       copy.createdAt = todayISO();
       copy.updatedAt = todayISO();
       db.tasks.push(copy);
-      persist();
+      pushRow("tasks", copy);
       addAuditLog({ action: "Criação", type: "Tarefa", targetId: copy.id, targetName: copy.title, details: `Duplicada de: ${original.title}` });
       return clone(copy);
     },
@@ -715,7 +581,7 @@
       const task = db.tasks.find((t) => t.id === id);
       if (!task) return null;
       task.archived = archived !== false;
-      persist();
+      pushRow("tasks", task);
       addAuditLog({ action: "Edição", type: "Tarefa", targetId: id, targetName: task.title, details: archived !== false ? "Arquivada" : "Desarquivada" });
       return clone(task);
     },
@@ -723,7 +589,7 @@
       const task = db.tasks.find((t) => t.id === id);
       if (!task) return null;
       task.comments.push({ id: uid("cmt"), author, text, date: new Date().toISOString() });
-      persist();
+      pushRow("tasks", task);
       return clone(task);
     },
     isOverdue(task) {
@@ -733,21 +599,23 @@
   };
 
   /* ------------------------------------------------------------------ */
-  /* Atividades recentes                                                 */
+  /* Atividades recentes + auditoria                                     */
   /* ------------------------------------------------------------------ */
 
   function logActivity(userId, text) {
     if (!userId) return;
-    db.activities = db.activities || [];
-    db.activities.unshift({ id: uid("act"), user: userId, text, date: todayISO() });
+    const act = { id: uid("act"), user: userId, text, date: todayISO() };
+    db.activities.unshift(act);
+    pushRow("activities", act);
+    const removed = db.activities.slice(50);
     db.activities = db.activities.slice(0, 50);
+    removed.forEach((r) => deleteRow("activities", r.id));
   }
 
-  function addAuditLog({ action, type, targetId, targetName, targetRole, companyId, companyName, details, authorOverride }) {
-    const actor = authorOverride || getCurrentUser();
+  function addAuditLog({ action, type, targetId, targetName, targetRole, companyId, companyName, details }) {
+    const actor = currentUser;
     if (!actor) return;
-    db.auditLog = db.auditLog || [];
-    db.auditLog.unshift({
+    const entry = {
       id: uid("audit"),
       timestamp: new Date().toISOString(),
       authorId: actor.id,
@@ -761,9 +629,10 @@
       companyId: companyId || null,
       companyName: companyName || null,
       details: details || ""
-    });
+    };
+    db.auditLog.unshift(entry);
     db.auditLog = db.auditLog.slice(0, 1000);
-    persist();
+    pushRow("audit_log", entry);
   }
 
   const Activities = {
@@ -796,22 +665,38 @@
     },
     clear() {
       db.auditLog = [];
-      persist();
+      sb()
+        .from("audit_log")
+        .delete()
+        .neq("id", "")
+        .then(({ error }) => { if (error) syncError("audit clear", error); });
     }
   };
 
   /* ------------------------------------------------------------------ */
-  /* Configurações                                                       */
+  /* Configurações (tema fica local por navegador; resto é compartilhado)*/
   /* ------------------------------------------------------------------ */
 
   const Settings = {
     get() {
-      return clone(db.settings);
+      return Object.assign(clone(db.settings), { theme: localTheme() });
     },
     update(patch) {
-      db.settings = Object.assign({}, db.settings, patch);
-      persist();
-      return clone(db.settings);
+      const p = clone(patch || {});
+      if (p.theme) {
+        try { localStorage.setItem(THEME_KEY, p.theme); } catch (e) { /* sem storage */ }
+        delete p.theme;
+      }
+      if (Object.keys(p).length) {
+        db.settings = Object.assign({}, db.settings, p);
+        const shared = clone(db.settings);
+        delete shared.theme;
+        sb()
+          .from("app_settings")
+          .upsert({ id: "main", data: shared })
+          .then(({ error }) => { if (error) syncError("app_settings", error); });
+      }
+      return Settings.get();
     }
   };
 
@@ -872,8 +757,7 @@
   };
 
   /* ------------------------------------------------------------------ */
-  /* Export / Import — Banco de dados em Excel (.xlsx)                  */
-  /* Usa SheetJS (carregado via CDN em settings/relatórios)             */
+  /* Export / Import — Excel (.xlsx) via SheetJS                        */
   /* ------------------------------------------------------------------ */
 
   function buildWorkbook() {
@@ -929,8 +813,6 @@
     }
     const wb = buildWorkbook();
     XLSX.writeFile(wb, filename || "banco_de_dados.xlsx");
-    db.meta.lastSync = new Date().toISOString();
-    persist();
   }
 
   function importFromExcel(file, callback) {
@@ -944,6 +826,7 @@
       try {
         const data = new Uint8Array(e.target.result);
         const workbook = XLSX.read(data, { type: "array" });
+        const touched = [];
 
         if (workbook.Sheets["Tarefas"]) {
           const rows = XLSX.utils.sheet_to_json(workbook.Sheets["Tarefas"]);
@@ -964,26 +847,33 @@
             };
             if (existing) {
               Object.assign(existing, payload, { updatedAt: todayISO() });
+              touched.push(existing);
             } else {
-              db.tasks.push(
-                Object.assign(
-                  {
-                    id: row.ID || uid("task"),
-                    checklist: [],
-                    comments: [],
-                    attachments: [],
-                    createdAt: todayISO(),
-                    updatedAt: todayISO()
-                  },
-                  payload
-                )
+              const task = Object.assign(
+                {
+                  id: row.ID || uid("task"),
+                  checklist: [],
+                  comments: [],
+                  attachments: [],
+                  createdAt: todayISO(),
+                  updatedAt: todayISO()
+                },
+                payload
               );
+              db.tasks.push(task);
+              touched.push(task);
             }
           });
         }
 
+        if (touched.length) {
+          sb()
+            .from("tasks")
+            .upsert(touched.map((t) => ({ id: t.id, data: t })))
+            .then(({ error }) => { if (error) syncError("import tasks", error); });
+        }
+
         db.meta.lastSync = new Date().toISOString();
-        persist();
         callback && callback({ ok: true, message: "Importação concluída com sucesso." });
       } catch (err) {
         console.error(err);
@@ -994,49 +884,86 @@
   }
 
   /* ------------------------------------------------------------------ */
-  /* Camada preparada para futura integração com API real                */
-  /* Basta substituir as implementações de cada método mantendo a        */
-  /* mesma assinatura (Promises) para plugar um backend HTTP real.       */
+  /* Migração única: dados antigos do localStorage → Supabase            */
   /* ------------------------------------------------------------------ */
 
-  const api = {
-    baseUrl: null, // ex: "https://api.minhaempresa.com/v1"
-    async request(path, options) {
-      // Quando um backend real existir, este método fará fetch(baseUrl + path, options)
-      console.warn("[DB.api] Backend real não configurado. Operação simulada localmente.", path, options);
-      return Promise.resolve(null);
+  function hasLegacyLocalData() {
+    try { return !!localStorage.getItem(LEGACY_STORAGE_KEY); } catch (e) { return false; }
+  }
+
+  async function importLegacyLocal() {
+    let legacy;
+    try {
+      legacy = JSON.parse(localStorage.getItem(LEGACY_STORAGE_KEY) || "null");
+    } catch (e) {
+      return { ok: false, message: "Dados locais ilegíveis." };
     }
-  };
+    if (!legacy) return { ok: false, message: "Nenhum dado antigo encontrado neste navegador." };
+
+    const s = sb();
+    const results = {};
+    const upsertAll = async (table, list) => {
+      if (!list || !list.length) { results[table] = 0; return; }
+      const { error } = await s.from(table).upsert(list.map((x) => ({ id: x.id, data: x })));
+      if (error) throw new Error(table + ": " + error.message);
+      results[table] = list.length;
+    };
+
+    try {
+      await upsertAll("companies", legacy.companies);
+      await upsertAll("boletos", legacy.boletos);
+      await upsertAll("teams", legacy.teams);
+      await upsertAll("tasks", legacy.tasks);
+      if (legacy.settings) {
+        const shared = clone(legacy.settings);
+        delete shared.theme;
+        const { error } = await s.from("app_settings").upsert({ id: "main", data: shared });
+        if (error) throw new Error("app_settings: " + error.message);
+      }
+    } catch (e) {
+      return { ok: false, message: "Falha na migração: " + e.message };
+    }
+
+    await fetchAll();
+    return {
+      ok: true,
+      message:
+        `Migração concluída — empresas: ${results.companies || 0}, boletos: ${results.boletos || 0}, ` +
+        `equipes: ${results.teams || 0}, tarefas: ${results.tasks || 0}. ` +
+        "Usuários NÃO são migrados: recadastre-os em Equipe (as senhas antigas não são aproveitáveis)."
+    };
+  }
 
   /* ------------------------------------------------------------------ */
-  /* Reset (utilitário de desenvolvimento)                               */
+  /* Compatibilidade                                                     */
   /* ------------------------------------------------------------------ */
 
   function resetDatabase() {
-    db = seedDatabase();
-    persist();
-  }
-
-  /* Recarrega o banco de memória a partir do localStorage (útil quando
-     outra aba pode ter gravado dados enquanto esta estava aberta) */
-  function reloadFromStorage() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) db = JSON.parse(raw);
-    } catch (e) {
-      /* ignora leitura inválida — mantém db atual */
+    if (global.UI && global.UI.toast) {
+      global.UI.toast("Reset local desativado: os dados agora ficam no Supabase.", "error");
     }
   }
+
+  const api = {
+    baseUrl: null,
+    async request() {
+      console.warn("[DB.api] Obsoleto: o backend agora é o Supabase (window.SB).");
+      return Promise.resolve(null);
+    }
+  };
 
   /* ------------------------------------------------------------------ */
   /* Exposição pública                                                    */
   /* ------------------------------------------------------------------ */
 
   global.DB = {
+    configured,
     uid,
     todayISO,
+    init,
     login,
     logout,
+    signUpCompany,
     getSession,
     getCurrentUser,
     isAdmin,
@@ -1052,8 +979,10 @@
     Stats,
     exportToExcel,
     importFromExcel,
+    hasLegacyLocalData,
+    importLegacyLocal,
     resetDatabase,
-    reload: reloadFromStorage,
+    reload,
     api
   };
 })(window);

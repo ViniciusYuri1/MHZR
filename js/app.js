@@ -3,13 +3,20 @@
    roteamento por hash e alternância de tema.
    ========================================================================== */
 
-(function () {
+(async function () {
   "use strict";
 
-  const user = DB.requireSession("index.html");
-  if (!user) return;
-
   UI.initThemeFromSettings();
+
+  /* Carrega sessão + dados do Supabase antes de montar o shell */
+  document.getElementById("view-content").innerHTML =
+    '<div class="empty-state"><div class="empty-icon">⏳</div><div>Carregando dados...</div></div>';
+
+  const user = await DB.init();
+  if (!user) {
+    window.location.href = "index.html";
+    return;
+  }
 
   const ROUTES = [
     { id: "dashboard", label: "Dashboard", icon: "📊", roles: ["admin", "employee"], section: "Principal" },
@@ -204,13 +211,12 @@
     el.addEventListener("click", () => navigate(el.dataset.route));
   });
 
-  document.getElementById("logout-btn").addEventListener("click", () => {
-    DB.logout();
+  document.getElementById("logout-btn").addEventListener("click", async () => {
+    await DB.logout();
     window.location.href = "index.html";
   });
 
-  // Logout automático ao fechar a aba, navegar para outro site ou recarregar a página
-  window.addEventListener("pagehide", () => { DB.logout(); });
+  // A sessão vive em sessionStorage: expira ao fechar a aba (sem logout manual)
   window.addEventListener("pageshow", (e) => {
     // Se a página foi restaurada do cache do navegador (bfcache), redireciona para o login
     if (e.persisted && !DB.getCurrentUser()) {

@@ -616,9 +616,13 @@
 
     const revokeBtn = overlay.querySelector("#ca-revoke");
     if (revokeBtn) {
-      revokeBtn.addEventListener("click", () => {
+      revokeBtn.addEventListener("click", async () => {
         if (UI.confirmDialog(`Revogar o acesso de ${co.name} ao portal? Ela não poderá mais entrar.`)) {
-          DB.Users.remove(existing.id);
+          const result = await DB.Users.remove(existing.id);
+          if (!result.ok) {
+            UI.toast(result.message || "Não foi possível revogar o acesso.", "error");
+            return;
+          }
           UI.toast("Acesso revogado.", "success");
           UI.hideModal();
           if (onSaved) onSaved();
@@ -626,26 +630,37 @@
       });
     }
 
-    overlay.querySelector("#ca-save").addEventListener("click", () => {
+    overlay.querySelector("#ca-save").addEventListener("click", async () => {
       const email = overlay.querySelector("#ca-email").value.trim();
       const pass  = overlay.querySelector("#ca-pass").value.trim();
       if (!email) { UI.toast("Informe o e-mail de acesso.", "error"); return; }
       if (!existing && !pass) { UI.toast("Defina uma senha para criar o acesso.", "error"); return; }
 
+      const saveBtn = overlay.querySelector("#ca-save");
+      saveBtn.disabled = true;
+      saveBtn.textContent = "Salvando...";
+
+      let result;
       if (existing) {
         const patch = { name: co.name, email, companyId: co.id };
         if (pass) patch.password = pass;
-        DB.Users.update(existing.id, patch);
-        UI.toast("Acesso atualizado.", "success");
+        result = await DB.Users.update(existing.id, patch);
       } else {
-        DB.Users.create({
+        result = await DB.Users.create({
           name: co.name, email, password: pass, role: "company",
           companyId: co.id, team: null, position: "Portal Empresa",
           avatar: co.name.split(" ").slice(0,2).map((p) => p[0]).join("").toUpperCase(),
           status: "offline", permissions: ["boletos:own"], performance: 0
         });
-        UI.toast("Acesso ao portal criado com sucesso.", "success");
       }
+
+      if (!result.ok) {
+        UI.toast(result.message || "Não foi possível salvar o acesso.", "error");
+        saveBtn.disabled = false;
+        saveBtn.textContent = existing ? "Atualizar Acesso" : "Criar Acesso";
+        return;
+      }
+      UI.toast(existing ? "Acesso atualizado." : "Acesso ao portal criado com sucesso.", "success");
       UI.hideModal();
       if (onSaved) onSaved();
     });
