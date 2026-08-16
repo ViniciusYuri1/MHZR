@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Corrigindo banco de dados — GestãoTask</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #f7f5ef; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    .card { background: #fff; border-radius: 16px; padding: 40px; max-width: 460px; width: 90%; box-shadow: 0 4px 24px rgba(0,0,0,.10); text-align: center; }
+    .icon { font-size: 48px; margin-bottom: 16px; }
+    h2 { font-size: 1.35rem; margin-bottom: 10px; color: #1b1815; }
+    p  { color: #6b6560; font-size: 0.9rem; line-height: 1.6; margin-bottom: 20px; }
+    .log { background: #f0ece6; border-radius: 8px; padding: 14px 16px; text-align: left; font-size: 13px; color: #444; margin-bottom: 24px; line-height: 2; }
+    .ok  { color: #3a8c5c; font-weight: 600; }
+    .upd { color: #b06a1a; font-weight: 600; }
+    .err { color: #c1543d; font-weight: 600; }
+    a.btn { display: inline-block; background: #cc785c; color: #fff; text-decoration: none;
+            padding: 12px 32px; border-radius: 10px; font-weight: 700; font-size: 1rem;
+            transition: background .2s; }
+    a.btn:hover { background: #b5664c; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="icon">🔧</div>
+  <h2>Correção de Credenciais</h2>
+  <p>Esta página garante que todos os logins estejam corretos no banco de dados local do navegador, sem apagar tarefas ou outras configurações.</p>
+  <div class="log" id="log">Processando...</div>
+  <a class="btn" href="index.html" id="btn" style="display:none;">Ir para o Login →</a>
+</div>
+
+<script>
+(function () {
+  var KEY = 'sgt_database_v1';
+  var log = document.getElementById('log');
+  var btn = document.getElementById('btn');
+  var lines = [];
+
+  /* Usuários base do sistema */
+  var ALL_USERS = [
+    { id:'user_1', name:'Murillo', email:'murillo@empresa.com', password:'admin123', role:'admin',    team:'team_1', position:'Administrador',       avatar:'MU', permissions:['all'],       performance:95, companyId:null },
+    { id:'user_2', name:'Gustavo', email:'gustavo@empresa.com', password:'123456',   role:'employee', team:'team_1', position:'Desenvolvedor',        avatar:'GU', permissions:['tasks:own'], performance:88, companyId:null },
+    { id:'user_3', name:'Larissa', email:'larissa@empresa.com', password:'123456',   role:'employee', team:'team_1', position:'Designer & Marketing', avatar:'LA', permissions:['tasks:own'], performance:90, companyId:null },
+  ];
+
+  /* IDs de usuários de empresas antigas que devem ser removidos */
+  var REMOVE_USER_IDS = ['user_co1', 'user_co2', 'user_co3'];
+
+  /* Empresas que devem existir no sistema */
+  var ALL_COMPANIES = [
+    { id:'co_1', name:'Panobianco dos Casa',  cnpj:'', contact:'', email:'', phone:'', status:'ativo', since:'', contractText:'', contractFile:null, contractSignedAt:null, contractSignedBy:null },
+    { id:'co_2', name:'Panobianco Alvarenga', cnpj:'', contact:'', email:'', phone:'', status:'ativo', since:'', contractText:'', contractFile:null, contractSignedAt:null, contractSignedBy:null },
+    { id:'co_3', name:'Panobianco Raposo',    cnpj:'', contact:'', email:'', phone:'', status:'ativo', since:'', contractText:'', contractFile:null, contractSignedAt:null, contractSignedBy:null },
+    { id:'co_4', name:'Panobianco Castelo',   cnpj:'', contact:'', email:'', phone:'', status:'ativo', since:'', contractText:'', contractFile:null, contractSignedAt:null, contractSignedBy:null },
+    { id:'co_5', name:'Panobianco Riberão',   cnpj:'', contact:'', email:'', phone:'', status:'ativo', since:'', contractText:'', contractFile:null, contractSignedAt:null, contractSignedBy:null },
+    { id:'co_6', name:'Power Pedal',          cnpj:'', contact:'', email:'', phone:'', status:'ativo', since:'', contractText:'', contractFile:null, contractSignedAt:null, contractSignedBy:null },
+    { id:'co_7', name:'Hype Jump',            cnpj:'', contact:'', email:'', phone:'', status:'ativo', since:'', contractText:'', contractFile:null, contractSignedAt:null, contractSignedBy:null },
+    { id:'co_8', name:'Vita Spinning',        cnpj:'', contact:'', email:'', phone:'', status:'ativo', since:'', contractText:'', contractFile:null, contractSignedAt:null, contractSignedBy:null },
+  ];
+
+  try {
+    var raw = localStorage.getItem(KEY);
+
+    if (!raw) {
+      /* Banco não existe: cria do zero com todos os usuários */
+      var freshDb = {
+        users: ALL_USERS.map(function(u) { return Object.assign({ status:'offline' }, u); }),
+        teams: [{ id:'team_1', name:'Equipe Principal', lead:'user_1', color:'#cc785c' }],
+        tasks: [], activities: [], boletos: [],
+        companies: [
+          { id:'co_1', name:'Panobianco dos Casa',  cnpj:'', contact:'', email:'', phone:'', status:'ativo', since:'', contractText:'', contractFile:null, contractSignedAt:null, contractSignedBy:null },
+          { id:'co_2', name:'Panobianco Alvarenga', cnpj:'', contact:'', email:'', phone:'', status:'ativo', since:'', contractText:'', contractFile:null, contractSignedAt:null, contractSignedBy:null },
+          { id:'co_3', name:'Panobianco Raposo',    cnpj:'', contact:'', email:'', phone:'', status:'ativo', since:'', contractText:'', contractFile:null, contractSignedAt:null, contractSignedBy:null },
+          { id:'co_4', name:'Panobianco Castelo',   cnpj:'', contact:'', email:'', phone:'', status:'ativo', since:'', contractText:'', contractFile:null, contractSignedAt:null, contractSignedBy:null },
+          { id:'co_5', name:'Panobianco Riberão',   cnpj:'', contact:'', email:'', phone:'', status:'ativo', since:'', contractText:'', contractFile:null, contractSignedAt:null, contractSignedBy:null },
+          { id:'co_6', name:'Power Pedal',          cnpj:'', contact:'', email:'', phone:'', status:'ativo', since:'', contractText:'', contractFile:null, contractSignedAt:null, contractSignedBy:null },
+          { id:'co_7', name:'Hype Jump',            cnpj:'', contact:'', email:'', phone:'', status:'ativo', since:'', contractText:'', contractFile:null, contractSignedAt:null, contractSignedBy:null },
+          { id:'co_8', name:'Vita Spinning',        cnpj:'', contact:'', email:'', phone:'', status:'ativo', since:'', contractText:'', contractFile:null, contractSignedAt:null, contractSignedBy:null }
+        ],
+        settings: { companyName:'Minha Empresa', theme:'light', notifications:{ email:true, push:true, deadlineReminder:true, dailySummary:false } },
+        meta: { version:1, schemaVersion:3, lastSync:null }
+      };
+      localStorage.setItem(KEY, JSON.stringify(freshDb));
+      lines.push('<span class="ok">✓ Banco criado do zero com todos os usuários.</span>');
+
+    } else {
+      var db = JSON.parse(raw);
+
+      ALL_USERS.forEach(function(u) {
+        var idx = db.users.findIndex(function(x) { return x.id === u.id; });
+
+        if (idx >= 0) {
+          /* Garante email, senha, role e companyId corretos — preserva o restante */
+          var changed = false;
+          if (db.users[idx].email    !== u.email)    { db.users[idx].email    = u.email;    changed = true; }
+          if (db.users[idx].password !== u.password) { db.users[idx].password = u.password; changed = true; }
+          if (db.users[idx].role     !== u.role)     { db.users[idx].role     = u.role;     changed = true; }
+          if (u.companyId && db.users[idx].companyId !== u.companyId) { db.users[idx].companyId = u.companyId; changed = true; }
+
+          lines.push(changed
+            ? '<span class="upd">↺ Credenciais corrigidas: ' + u.name + '</span>'
+            : '<span class="ok">✓ OK: ' + u.name + '</span>');
+
+        } else {
+          /* Usuário não encontrado: adiciona */
+          db.users.push(Object.assign({ status:'offline' }, u));
+          lines.push('<span class="ok">+ Adicionado: ' + u.name + '</span>');
+        }
+      });
+
+      /* Remove usuários de empresas antigas */
+      var beforeCount = db.users.length;
+      db.users = db.users.filter(function(u) { return REMOVE_USER_IDS.indexOf(u.id) === -1; });
+      var removed = beforeCount - db.users.length;
+      if (removed > 0) lines.push('<span class="upd">↺ ' + removed + ' usuário(s) de empresa antigos removidos.</span>');
+
+      /* Atualiza/adiciona empresas */
+      if (!db.companies) db.companies = [];
+      ALL_COMPANIES.forEach(function(co) {
+        var idx = db.companies.findIndex(function(x) { return x.id === co.id; });
+        if (idx >= 0) {
+          /* Atualiza só o nome; preserva dados já preenchidos pelo admin */
+          var changed = db.companies[idx].name !== co.name;
+          db.companies[idx].name = co.name;
+          if (!('contractText'     in db.companies[idx])) db.companies[idx].contractText     = '';
+          if (!('contractFile'     in db.companies[idx])) db.companies[idx].contractFile     = null;
+          if (!('contractSignedAt' in db.companies[idx])) db.companies[idx].contractSignedAt = null;
+          if (!('contractSignedBy' in db.companies[idx])) db.companies[idx].contractSignedBy = null;
+          lines.push(changed
+            ? '<span class="upd">↺ Empresa atualizada: ' + co.name + '</span>'
+            : '<span class="ok">✓ OK empresa: ' + co.name + '</span>');
+        } else {
+          db.companies.push(co);
+          lines.push('<span class="ok">+ Empresa adicionada: ' + co.name + '</span>');
+        }
+      });
+
+      /* Remove empresas antigas que não existem mais na lista */
+      var validIds = ALL_COMPANIES.map(function(c) { return c.id; });
+      var oldNames = ['Empresa Alpha Ltda','Beta Soluções ME','Gama Tecnologia SA'];
+      db.companies = db.companies.filter(function(c) {
+        if (validIds.indexOf(c.id) === -1 && oldNames.indexOf(c.name) !== -1) {
+          lines.push('<span class="upd">↺ Empresa antiga removida: ' + c.name + '</span>');
+          return false;
+        }
+        return true;
+      });
+
+      if (!db.meta) db.meta = {};
+      db.meta.schemaVersion = 4;
+      localStorage.setItem(KEY, JSON.stringify(db));
+      lines.push('<br><strong>✅ Banco atualizado com sucesso!</strong>');
+    }
+
+  } catch (e) {
+    lines.push('<span class="err">❌ Erro: ' + e.message + '</span>');
+    lines.push('<span class="err">Tente apagar os dados do site pelo navegador e acesse o login novamente.</span>');
+  }
+
+  log.innerHTML = lines.join('<br>');
+  btn.style.display = 'inline-block';
+})();
+</script>
+</body>
+</html>

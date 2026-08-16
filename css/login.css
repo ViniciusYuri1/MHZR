@@ -1,0 +1,272 @@
+/* ==========================================================================
+   login.css — Tela de autenticação
+   ========================================================================== */
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 20% 20%, #4c1d95 0%, #0f0b1e 55%, #09080f 100%);
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-page::before,
+.login-page::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  opacity: 0.32;
+}
+.login-page::before {
+  width: 380px;
+  height: 380px;
+  background: #a78bfa;
+  top: -120px;
+  left: -100px;
+}
+.login-page::after {
+  width: 320px;
+  height: 320px;
+  background: #6d28d9;
+  bottom: -100px;
+  right: -80px;
+}
+
+.login-shell {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: 100%;
+  max-width: 920px;
+  min-height: 560px;
+  background: #fffdf9;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 30px 80px rgba(20, 15, 10, 0.4);
+}
+
+.login-aside {
+  flex: 1.1;
+  background: linear-gradient(160deg, #4c1d95, #7c3aed 45%, #a78bfa);
+  color: #fff;
+  padding: 48px 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+}
+
+.login-aside .brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 700;
+  font-size: 20px;
+  font-family: var(--font-serif, serif);
+}
+
+.login-aside .brand-mark {
+  width: 42px;
+  height: 42px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.login-aside .brand-mark svg { width: 20px; height: 20px; }
+.login-aside .brand:hover .brand-mark { transform: rotate(15deg) scale(1.08); }
+
+.login-aside h2 {
+  font-family: var(--font-serif, serif);
+  font-weight: 600;
+  font-size: 28px;
+  line-height: 1.35;
+  margin: 24px 0 12px;
+}
+.login-aside p { opacity: 0.9; line-height: 1.6; max-width: 320px; }
+
+.login-aside .feature-list {
+  list-style: none;
+  padding: 0;
+  margin: 28px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.login-aside .feature-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  opacity: 0.95;
+  transition: transform 0.2s ease;
+}
+.login-aside .feature-list li:hover { transform: translateX(3px); }
+.login-aside .feature-list .check {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.login-aside .quote {
+  font-family: var(--font-serif, serif);
+  font-style: italic;
+  font-size: 13.5px;
+  opacity: 0.8;
+  border-top: 1px solid rgba(255, 255, 255, 0.28);
+  padding-top: 16px;
+}
+
+.login-form-wrap {
+  flex: 1;
+  padding: 48px 44px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.login-form-wrap h1 {
+  font-size: 26px;
+  margin: 0 0 6px;
+  color: var(--text-primary, #2b2a27);
+}
+.login-form-wrap .subtitle {
+  color: var(--text-secondary, #6f6a60);
+  font-size: 14px;
+  margin-bottom: 28px;
+}
+
+.login-error {
+  display: none;
+  background: var(--color-danger-light, #f6e3dd);
+  color: var(--color-danger, #c1543d);
+  border: 1px solid #e3b6a6;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  margin-bottom: 18px;
+}
+.login-error.visible { display: block; animation: fadeIn 0.25s ease; }
+
+.input-icon-wrap {
+  position: relative;
+}
+.input-icon-wrap .icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted, #9a948a);
+  font-size: 15px;
+}
+.input-icon-wrap input {
+  padding-left: 40px;
+}
+.input-icon-wrap .toggle-pass {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted, #9a948a);
+  font-size: 13px;
+}
+
+.login-options {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 4px 0 22px;
+  font-size: 13px;
+}
+.login-options a { color: var(--color-primary, #cc785c); font-weight: 600; }
+
+.login-submit {
+  width: 100%;
+  justify-content: center;
+  padding: 13px;
+  font-size: 15px;
+}
+
+.login-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 22px 0;
+  color: var(--text-muted, #9a948a);
+  font-size: 12px;
+}
+.login-divider::before,
+.login-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border-color, #e6e2d6);
+}
+
+.demo-accounts {
+  display: flex;
+  gap: 10px;
+}
+.demo-account-btn {
+  flex: 1;
+  text-align: left;
+  border: 1px solid var(--border-color, #e6e2d6);
+  background: var(--bg-surface-alt, #f3f1e9);
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-primary, #2b2a27);
+  transition: all 0.2s ease;
+}
+.demo-account-btn:hover {
+  border-color: var(--color-primary, #cc785c);
+  background: var(--color-primary-light, #f3e3da);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,.06));
+}
+.demo-account-btn strong { display: block; font-size: 13px; margin-bottom: 2px; }
+
+.login-footer-note {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted, #9a948a);
+  margin-top: 24px;
+}
+
+@media (max-width: 760px) {
+  .login-aside { display: none; }
+  .login-shell { min-height: auto; border-radius: 20px; }
+  .login-form-wrap { padding: 36px 28px; }
+}
+
+@media (max-width: 500px) {
+  .login-page { padding: 0; align-items: flex-end; }
+  .login-shell {
+    border-radius: 24px 24px 0 0;
+    max-width: 100%;
+    min-height: 85vh;
+  }
+  .login-form-wrap { padding: 32px 22px 36px; }
+  .login-form-wrap h1 { font-size: 22px; }
+
+  /* Demo accounts: 2 por linha no mobile */
+  .demo-accounts { flex-wrap: wrap; }
+  .demo-account-btn { flex: 1 1 calc(50% - 5px); min-width: 0; }
+}
