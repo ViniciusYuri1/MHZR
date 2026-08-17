@@ -106,6 +106,7 @@
                 ${b.status === "pendente" || b.status === "vencido" ? `<button class="btn btn-ghost btn-sm" data-mark-paid="${b.id}" title="Marcar como pago">✅</button>` : ""}
                 ${b.attachment ? `<button class="btn btn-ghost btn-sm" data-view-attach="${b.id}" title="Ver anexo: ${UI.escapeHtml(b.attachment.name)}">📎</button>` : ""}
                 <button class="btn btn-ghost btn-sm" data-edit-boleto="${b.id}" title="Editar">✏️</button>
+                <button class="btn btn-ghost btn-sm" data-clone-boleto="${b.id}" title="Clonar para o próximo mês">🔁</button>
                 <button class="btn btn-ghost btn-sm" data-delete-boleto="${b.id}" title="Excluir">🗑️</button>
               </div>
             </td>
@@ -159,6 +160,9 @@
     });
     wrap.querySelectorAll("[data-edit-boleto]").forEach((btn) => {
       btn.addEventListener("click", () => openBoletoModal(btn.dataset.editBoleto, () => renderBoletosTab(wrap)));
+    });
+    wrap.querySelectorAll("[data-clone-boleto]").forEach((btn) => {
+      btn.addEventListener("click", () => openBoletoModal(null, () => renderBoletosTab(wrap), btn.dataset.cloneBoleto));
     });
     wrap.querySelectorAll("[data-delete-boleto]").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -300,14 +304,70 @@
   /* MODAIS                                                             */
   /* ================================================================= */
 
-  function openBoletoModal(boletoId, onSaved) {
-    const bol       = boletoId ? DB.Boletos.get(boletoId) : null;
+  /* "2026-08" -> "2026-09" */
+  function nextMonthYM(ym) {
+    const [y, m] = ym.split("-").map(Number);
+    if (!y || !m) return ym;
+    const ny = m === 12 ? y + 1 : y;
+    const nm = m === 12 ? 1 : m + 1;
+    return ny + "-" + String(nm).padStart(2, "0");
+  }
+
+  /* "2026-08-31" -> "2026-09-30" (mantém o dia, limitado ao fim do mês) */
+  function nextMonthDate(iso) {
+    const [y, m, d] = (iso || "").split("-").map(Number);
+    if (!y || !m || !d) return iso;
+    const ny = m === 12 ? y + 1 : y;
+    const nm = m === 12 ? 1 : m + 1;
+    const lastDay = new Date(ny, nm, 0).getDate();
+    return ny + "-" + String(nm).padStart(2, "0") + "-" + String(Math.min(d, lastDay)).padStart(2, "0");
+  }
+
+  /* Atualiza referências ao mês de origem na descrição (ex.: "Jul/2026" ou
+     "07/2026" viram o mês seguinte). Se não encontrar, mantém o texto. */
+  function bumpMonthInText(text, fromYM) {
+    if (!text || !fromYM) return text;
+    const abbr = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+    const [fy, fm] = fromYM.split("-").map(Number);
+    const toYM = nextMonthYM(fromYM);
+    const [ty, tm] = toYM.split("-").map(Number);
+    let out = text.replace(
+      new RegExp(abbr[fm - 1] + "\\s*\\/\\s*" + fy, "gi"),
+      abbr[tm - 1] + "/" + ty
+    );
+    out = out.replace(
+      new RegExp(String(fm).padStart(2, "0") + "\\s*\\/\\s*" + fy, "g"),
+      String(tm).padStart(2, "0") + "/" + ty
+    );
+    return out;
+  }
+
+  function openBoletoModal(boletoId, onSaved, cloneFromId) {
     const companies = DB.Companies.list();
-    const isNew     = !bol;
+    const isNew     = !boletoId;
+
+    /* Clonagem: pré-preenche com os dados do boleto de origem, avançando o
+       mês de referência e o vencimento em um mês; volta a "pendente" e não
+       copia anexo nem data de pagamento (cada boleto tem os seus). */
+    let bol = boletoId ? DB.Boletos.get(boletoId) : null;
+    const cloneSource = !boletoId && cloneFromId ? DB.Boletos.get(cloneFromId) : null;
+    if (cloneSource) {
+      bol = {
+        companyId:   cloneSource.companyId,
+        description: bumpMonthInText(cloneSource.description, cloneSource.month),
+        amount:      cloneSource.amount,
+        month:       nextMonthYM(cloneSource.month),
+        dueDate:     nextMonthDate(cloneSource.dueDate),
+        status:      "pendente",
+        paidDate:    null,
+        notes:       cloneSource.notes || "",
+        attachment:  null
+      };
+    }
 
     const html = `
       <div class="modal-header">
-        <h3>${isNew ? "Novo Boleto" : "Editar Boleto"}</h3>
+        <h3>${isNew ? (cloneSource ? "Clonar Boleto" : "Novo Boleto") : "Editar Boleto"}</h3>
         <button class="modal-close" id="bm-close">✕</button>
       </div>
       <div class="modal-body">
