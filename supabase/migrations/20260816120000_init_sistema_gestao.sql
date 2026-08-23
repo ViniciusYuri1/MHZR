@@ -454,6 +454,11 @@ insert into public.companies (id, data) values
   ('co_7', '{"id":"co_7","name":"Hype Jump","cnpj":"","contact":"","email":"","phone":"","status":"ativo","since":"","contractText":"","contractFile":null,"contractSignedAt":null,"contractSignedBy":null}'),
   ('co_8', '{"id":"co_8","name":"Vita Spinning","cnpj":"","contact":"","email":"","phone":"","status":"ativo","since":"","contractText":"","contractFile":null,"contractSignedAt":null,"contractSignedBy":null}');
 
+-- protect_profile_fields exige is_admin(), que depende de uma sessão autenticada
+-- (auth.uid()); durante o seed da migration não há sessão, então o trigger é
+-- desligado só para este bloco e religado logo em seguida.
+alter table public.profiles disable trigger protect_profile_fields;
+
 do $$
 declare
   v_admin uuid;
@@ -479,3 +484,5 @@ begin
   );
 end;
 $$;
+
+alter table public.profiles enable trigger protect_profile_fields;
