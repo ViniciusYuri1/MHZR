@@ -1,4 +1,4 @@
-# GestãoTask — Sistema de Gestão de Tarefas
+# GestãoMHZR — Sistema de Gestão de Tarefas
 
 CRM interno de tarefas, equipe e financeiro (boletos/contratos) com portal para
 empresas clientes. Front-end estático (HTML + CSS + JS puro) com banco de dados
