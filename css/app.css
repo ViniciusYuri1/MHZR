@@ -90,15 +90,15 @@
   overflow: hidden;
 }
 .nav-item .nav-icon {
-  font-size: 17px;
   width: 20px;
-  text-align: center;
+  height: 20px;
   flex-shrink: 0;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: transform var(--transition);
-  /* recolore o emoji (glifo colorido nativo) para o roxo clarinho da paleta (--color-accent-soft) */
-  filter: brightness(0) invert(59%) sepia(100%) saturate(465%) hue-rotate(202deg) brightness(113%) contrast(98%);
 }
+.nav-item .nav-icon svg { width: 18px; height: 18px; stroke: var(--color-accent-soft); }
 .nav-item:hover { background: var(--bg-hover); color: var(--text-primary); }
 .nav-item:hover .nav-icon { transform: scale(1.12); }
 .nav-item.active { background: var(--color-primary-light); color: var(--color-primary); border-left-color: var(--color-primary); }
