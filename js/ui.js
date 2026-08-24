@@ -50,6 +50,16 @@
       .replace(/"/g, "&quot;");
   }
 
+  /* Renderiza um avatar: foto (se o usuário tiver `photo`) ou iniciais. */
+  function avatarHtml(user, sizeClass, extraAttrs) {
+    const cls = "avatar" + (sizeClass ? " " + sizeClass : "");
+    const attrs = extraAttrs || "";
+    if (user && user.photo) {
+      return `<div class="${cls}" ${attrs}><img src="${user.photo}" alt="${escapeHtml(user.name || "")}" /></div>`;
+    }
+    return `<div class="${cls}" ${attrs}>${escapeHtml(user ? (user.avatar || "?") : "?")}</div>`;
+  }
+
   function formatDate(iso) {
     if (!iso) return "—";
     const [y, m, d] = iso.split("-");
@@ -132,6 +142,7 @@
     applyTheme,
     initThemeFromSettings,
     escapeHtml,
+    avatarHtml,
     formatDate,
     formatDateTime,
     confirmDialog,

@@ -71,7 +71,12 @@
   /* ------------------------------------------------------------------ */
 
   function renderUserBox() {
-    document.getElementById("user-avatar").textContent = user.avatar || user.name.slice(0, 2).toUpperCase();
+    const avatarEl = document.getElementById("user-avatar");
+    if (user.photo) {
+      avatarEl.innerHTML = `<img src="${user.photo}" alt="${UI.escapeHtml(user.name)}" />`;
+    } else {
+      avatarEl.textContent = user.avatar || user.name.slice(0, 2).toUpperCase();
+    }
     document.getElementById("user-name").textContent = user.name;
     document.getElementById("user-role").textContent = user.role === "admin" ? "Administrador" : user.role === "company" ? "Portal Empresa" : "Funcionário";
   }

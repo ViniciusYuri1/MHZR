@@ -122,7 +122,7 @@
               </td>
               <td>
                 <div class="flex items-center gap-2">
-                  <div class="avatar avatar-sm">${(DB.Users.get(t.assignee) || {}).avatar || "?"}</div>
+                  ${UI.avatarHtml(DB.Users.get(t.assignee), "avatar-sm")}
                   <span class="text-sm">${UI.escapeHtml(userName(t.assignee))}</span>
                 </div>
               </td>
@@ -269,7 +269,7 @@
           return `
           <div style="padding:10px 0; border-bottom:1px solid var(--border-color);">
             <div class="flex items-center gap-2">
-              <div class="avatar avatar-sm">${author ? author.avatar : "?"}</div>
+              ${UI.avatarHtml(author, "avatar-sm")}
               <strong class="text-sm">${author ? UI.escapeHtml(author.name) : "Usuário"}</strong>
               <span class="text-sm text-muted">${UI.formatDateTime(c.date)}</span>
             </div>

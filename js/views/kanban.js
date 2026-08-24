@@ -32,7 +32,7 @@
         </div>
         <div class="kc-meta">
           <span class="badge badge-${task.priority}">${PRIORITY_LABELS[task.priority]}</span>
-          <div class="avatar avatar-sm" title="${assignee ? UI.escapeHtml(assignee.name) : ""}">${assignee ? assignee.avatar : "?"}</div>
+          ${UI.avatarHtml(assignee, "avatar-sm", `title="${assignee ? UI.escapeHtml(assignee.name) : ""}"`)}
         </div>
         <div class="text-sm ${overdue ? "" : "text-muted"}" style="${overdue ? "color:var(--color-danger); font-weight:700;" : ""}">
           ${overdue ? "⚠️ Atrasada — " : "📅 "}${UI.formatDate(task.dueDate)}

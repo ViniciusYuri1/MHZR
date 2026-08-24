@@ -14,10 +14,17 @@
         <div class="card-header"><h3 class="card-title">Meu Perfil</h3></div>
         <div class="card-pad">
           <div class="flex items-center gap-3" style="margin-bottom:18px;">
-            <div class="avatar avatar-lg">${user.avatar}</div>
+            <div id="profile-avatar-wrap">${UI.avatarHtml(user, "avatar-lg")}</div>
             <div>
               <div style="font-weight:700;">${UI.escapeHtml(user.name)}</div>
               <div class="text-sm text-muted">${user.role === "admin" ? "Administrador" : "Funcionário"} · ${UI.escapeHtml(user.position || "")}</div>
+              <div class="flex gap-2" style="margin-top:8px;">
+                <label class="btn btn-secondary" style="cursor:pointer; padding:6px 12px; font-size:12px;">
+                  Trocar foto
+                  <input type="file" accept="image/*" id="profile-photo-input" style="display:none;" />
+                </label>
+                ${user.photo ? `<button class="btn btn-ghost" id="remove-profile-photo" style="padding:6px 12px; font-size:12px;">Remover foto</button>` : ""}
+              </div>
             </div>
           </div>
           <div class="form-row">
@@ -119,6 +126,16 @@
       </div>`;
   }
 
+  function syncTopbarAvatar(user) {
+    const el = document.getElementById("user-avatar");
+    if (!el) return;
+    if (user.photo) {
+      el.innerHTML = `<img src="${user.photo}" alt="${UI.escapeHtml(user.name)}" />`;
+    } else {
+      el.textContent = user.avatar || user.name.slice(0, 2).toUpperCase();
+    }
+  }
+
   function render(container, ctx) {
     const isAdmin = ctx.user.role === "admin";
     container.innerHTML = `
@@ -158,6 +175,45 @@
       UI.toast("Perfil atualizado com sucesso.", "success");
       document.getElementById("user-name").textContent = name;
     });
+
+    container.querySelector("#profile-photo-input").addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (!file.type.startsWith("image/")) {
+        UI.toast("Selecione um arquivo de imagem.", "error");
+        return;
+      }
+      if (file.size > 3 * 1024 * 1024) {
+        UI.toast("Imagem muito grande (máx. 3MB).", "error");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = async (ev) => {
+        const result = await DB.Users.update(ctx.user.id, { photo: ev.target.result });
+        if (!result.ok) {
+          UI.toast(result.message || "Não foi possível salvar a foto.", "error");
+          return;
+        }
+        UI.toast("Foto de perfil atualizada.", "success");
+        syncTopbarAvatar(result.user);
+        render(container, ctx);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    const removePhotoBtn = container.querySelector("#remove-profile-photo");
+    if (removePhotoBtn) {
+      removePhotoBtn.addEventListener("click", async () => {
+        const result = await DB.Users.update(ctx.user.id, { photo: null });
+        if (!result.ok) {
+          UI.toast(result.message || "Não foi possível remover a foto.", "error");
+          return;
+        }
+        UI.toast("Foto de perfil removida.", "success");
+        syncTopbarAvatar(result.user);
+        render(container, ctx);
+      });
+    }
 
     container.querySelector("#theme-light").addEventListener("click", () => {
       DB.Settings.update({ theme: "light" });

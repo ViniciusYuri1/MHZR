@@ -60,7 +60,7 @@
         <tr>
           <td>
             <div class="flex items-center gap-2">
-              <div class="avatar avatar-sm">${u.avatar}</div>
+              ${UI.avatarHtml(u, "avatar-sm")}
               <div>
                 <div style="font-weight:700;">${UI.escapeHtml(u.name)}</div>
                 <div class="text-sm text-muted">${UI.escapeHtml(u.email)}</div>

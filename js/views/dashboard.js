@@ -160,7 +160,7 @@
         const u = users.find((x) => x.id === a.user);
         return `
         <div class="activity-item">
-          <div class="avatar avatar-sm">${u ? u.avatar : "?"}</div>
+          ${UI.avatarHtml(u, "avatar-sm")}
           <div>
             <div class="activity-text"><strong>${UI.escapeHtml(u ? u.name : "Usuário")}</strong> ${UI.escapeHtml(a.text)}</div>
             <div class="activity-time">${UI.formatDate(a.date)}</div>
