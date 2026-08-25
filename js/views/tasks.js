@@ -33,7 +33,7 @@
 
   function getFilteredTasks(ctx) {
     let tasks = DB.Tasks.list({
-      assignee: ctx.user.role === "admin" ? undefined : ctx.user.id,
+      assignee: DB.canManageTasks(ctx.user) ? undefined : ctx.user.id,
       includeArchived: state.showArchived
     });
     if (state.showArchived) tasks = tasks.filter((t) => t.archived);
@@ -73,7 +73,7 @@
 
   function renderList(container, ctx) {
     const tasks = getFilteredTasks(ctx);
-    const isAdmin = ctx.user.role === "admin";
+    const isAdmin = DB.canManageTasks(ctx.user);
     const users = DB.Users.list();
 
     const filtersHtml = `
@@ -233,7 +233,7 @@
   /* ------------------------------------------------------------------ */
 
   function openTaskModal(ctx, taskId, onSaved) {
-    const isAdmin = ctx.user.role === "admin";
+    const isAdmin = DB.canManageTasks(ctx.user);
     const task = taskId ? DB.Tasks.get(taskId) : null;
     const isNew = !task;
     const users = DB.Users.list().filter((u) => u.role !== "company");

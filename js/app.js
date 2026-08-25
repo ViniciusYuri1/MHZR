@@ -78,11 +78,14 @@
       avatarEl.textContent = user.avatar || user.name.slice(0, 2).toUpperCase();
     }
     document.getElementById("user-name").textContent = user.name;
-    document.getElementById("user-role").textContent = user.role === "admin" ? "Administrador" : user.role === "company" ? "Portal Empresa" : "Funcionário";
+    document.getElementById("user-role").textContent =
+      user.role === "admin" ? "Administrador" :
+      user.role === "company" ? "Portal Empresa" :
+      DB.canManageTasks(user) ? "Funcionário 2" : "Funcionário";
   }
 
   function renderNotifications() {
-    const tasks = DB.Tasks.list({ assignee: user.role === "admin" ? undefined : user.id });
+    const tasks = DB.Tasks.list({ assignee: DB.canManageTasks(user) ? undefined : user.id });
     const overdue = tasks.filter((t) => DB.Tasks.isOverdue(t));
     const dueSoon = tasks.filter((t) => {
       if (t.status === "concluida") return false;

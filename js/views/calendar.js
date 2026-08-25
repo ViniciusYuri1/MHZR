@@ -16,7 +16,7 @@
   }
 
   function tasksForScope(ctx) {
-    return DB.Tasks.list({ assignee: ctx.user.role === "admin" ? undefined : ctx.user.id });
+    return DB.Tasks.list({ assignee: DB.canManageTasks(ctx.user) ? undefined : ctx.user.id });
   }
 
   function pillHtml(task) {

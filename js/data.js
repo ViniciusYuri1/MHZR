@@ -283,6 +283,13 @@
     return !!user && user.role === "admin";
   }
 
+  /* "Funcionário 2": funcionário com a permissão extra "tasks:manage" pode
+     criar/gerenciar tarefas como o admin, mas continua sem acesso a
+     Financeiro, Equipe, Relatórios e Auditoria (restritos ao admin). */
+  function canManageTasks(user) {
+    return !!user && (user.role === "admin" || (user.permissions || []).includes("tasks:manage"));
+  }
+
   function requireSession(redirectTo) {
     const user = getCurrentUser();
     if (!user) {
@@ -967,6 +974,7 @@
     getSession,
     getCurrentUser,
     isAdmin,
+    canManageTasks,
     requireSession,
     Users,
     Teams,

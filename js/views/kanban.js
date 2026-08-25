@@ -41,7 +41,8 @@
   }
 
   function render(container, ctx) {
-    const tasks = DB.Tasks.list({ assignee: ctx.user.role === "admin" ? undefined : ctx.user.id });
+    const canManage = DB.canManageTasks(ctx.user);
+    const tasks = DB.Tasks.list({ assignee: canManage ? undefined : ctx.user.id });
 
     container.innerHTML = `
       <div class="page-header">
@@ -50,7 +51,7 @@
           <p class="page-subtitle">Arraste os cartões entre as colunas para atualizar o status automaticamente.</p>
         </div>
         <div class="page-actions">
-          ${ctx.user.role === "admin" ? `<button class="btn btn-primary" id="kb-new-task">+ Nova Tarefa</button>` : ""}
+          ${canManage ? `<button class="btn btn-primary" id="kb-new-task">+ Nova Tarefa</button>` : ""}
         </div>
       </div>
 
@@ -64,7 +65,7 @@
               <span class="kanban-count">${colTasks.length}</span>
             </div>
             <div class="kanban-cards" data-status="${col.status}">
-              ${colTasks.map((t) => cardHtml(t, ctx.user.role === "admin")).join("")}
+              ${colTasks.map((t) => cardHtml(t, canManage)).join("")}
             </div>
           </div>`;
         }).join("")}

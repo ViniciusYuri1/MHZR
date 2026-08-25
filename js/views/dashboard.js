@@ -23,7 +23,7 @@
   const PRIORITY_LABELS = { baixa: "Baixa", media: "Média", alta: "Alta", urgente: "Urgente" };
 
   function scopedTasks(ctx) {
-    return DB.Tasks.list({ assignee: ctx.user.role === "admin" ? undefined : ctx.user.id });
+    return DB.Tasks.list({ assignee: DB.canManageTasks(ctx.user) ? undefined : ctx.user.id });
   }
 
   function statCardsHtml(ctx) {
@@ -218,10 +218,10 @@
       <div class="page-header">
         <div>
           <h1>Olá, ${UI.escapeHtml(ctx.user.name.split(" ")[0])} 👋</h1>
-          <p class="page-subtitle">Aqui está um resumo da produtividade ${ctx.user.role === "admin" ? "da equipe" : "das suas tarefas"} hoje.</p>
+          <p class="page-subtitle">Aqui está um resumo da produtividade ${DB.canManageTasks(ctx.user) ? "da equipe" : "das suas tarefas"} hoje.</p>
         </div>
         <div class="page-actions">
-          ${ctx.user.role === "admin" ? `<button class="btn btn-primary" id="dash-new-task">+ Nova Tarefa</button>` : ""}
+          ${DB.canManageTasks(ctx.user) ? `<button class="btn btn-primary" id="dash-new-task">+ Nova Tarefa</button>` : ""}
         </div>
       </div>
 

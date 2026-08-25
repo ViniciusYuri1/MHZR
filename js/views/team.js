@@ -19,6 +19,12 @@
     return "var(--color-danger)";
   }
 
+  function roleLabel(u) {
+    if (u.role === "admin") return "Administrador";
+    if ((u.permissions || []).includes("tasks:manage")) return "Funcionário 2";
+    return "Funcionário";
+  }
+
   function teamsSectionHtml(ctx) {
     const teams = DB.Teams.list();
     return `
@@ -70,7 +76,7 @@
           <td class="text-sm">${UI.escapeHtml(u.position || "—")}</td>
           <td class="text-sm">${team ? UI.escapeHtml(team.name) : "—"}</td>
           <td>${statusDot(u.status)}</td>
-          <td><span class="badge ${u.role === "admin" ? "badge-urgente" : "badge-em_andamento"}">${u.role === "admin" ? "Administrador" : "Funcionário"}</span></td>
+          <td><span class="badge ${u.role === "admin" ? "badge-urgente" : "badge-em_andamento"}">${roleLabel(u)}</span></td>
           <td style="min-width:140px;">
             <div class="flex items-center gap-2">
               <div class="progress-bar" style="flex:1;"><div class="progress-bar-fill" style="width:${u.performance}%; background:${performanceColor(u.performance)};"></div></div>
@@ -165,10 +171,12 @@
         <div class="form-group">
           <label class="form-label">Permissões adicionais</label>
           <div class="flex-col gap-2">
+            <label class="checkbox-row"><input type="checkbox" id="perm-tasks-manage" ${user && (user.permissions || []).includes("tasks:manage") ? "checked" : ""}/> <strong>Funcionário 2:</strong> criar e gerenciar tarefas como administrador</label>
             <label class="checkbox-row"><input type="checkbox" id="perm-tasks-all" ${user && (user.permissions || []).includes("tasks:all") ? "checked" : ""}/> Visualizar todas as tarefas</label>
             <label class="checkbox-row"><input type="checkbox" id="perm-reports" ${user && (user.permissions || []).includes("reports") ? "checked" : ""}/> Gerar relatórios</label>
             <label class="checkbox-row"><input type="checkbox" id="perm-manage-users" ${user && (user.permissions || []).includes("users:manage") ? "checked" : ""}/> Gerenciar usuários</label>
           </div>
+          <div class="text-sm text-muted" style="margin-top:6px;">Financeiro, Equipe, Relatórios e Auditoria continuam visíveis apenas para Administradores.</div>
         </div>
       </div>
       <div class="modal-footer">
@@ -190,6 +198,7 @@
       }
       const role = overlay.querySelector("#um-role").value;
       const permissions = [role === "admin" ? "all" : "tasks:own"];
+      if (overlay.querySelector("#perm-tasks-manage").checked) permissions.push("tasks:manage");
       if (overlay.querySelector("#perm-tasks-all").checked) permissions.push("tasks:all");
       if (overlay.querySelector("#perm-reports").checked) permissions.push("reports");
       if (overlay.querySelector("#perm-manage-users").checked) permissions.push("users:manage");
