@@ -216,6 +216,9 @@
                 ? `<span class="badge badge-concluida" style="font-size:11px;">✅ Contrato assinado</span>`
                 : `<span class="badge badge-em_andamento" style="font-size:11px;">📝 Aguardando assinatura</span>`)
             : `<span class="badge badge-backlog" style="font-size:11px;">📄 Sem contrato</span>`;
+          const durationBadge = co.contractDuration
+            ? `<span class="badge badge-em_andamento" style="font-size:11px;">🗓️ ${UI.escapeHtml(co.contractDuration)}</span>`
+            : `<span class="badge badge-backlog" style="font-size:11px;">🗓️ Prazo não informado</span>`;
           const newBadge = isNew
             ? `<span class="badge" style="font-size:11px;background:#7c3aed;color:#fff;margin-left:6px;">🆕 Novo cadastro</span>`
             : "";
@@ -232,7 +235,7 @@
                 </div>
                 <span class="badge ${co.status === "ativo" ? "badge-concluida" : "badge-backlog"}">${co.status === "ativo" ? "Ativo" : "Inativo"}</span>
               </div>
-              <div style="margin-bottom:10px;">${contractBadge}</div>
+              <div class="flex gap-2" style="margin-bottom:10px;flex-wrap:wrap;">${contractBadge}${durationBadge}</div>
               <div class="flex-col gap-1" style="font-size:13px;margin-bottom:14px;">
                 ${co.contact ? `<div>👤 ${UI.escapeHtml(co.contact)}</div>` : ""}
                 ${co.email   ? `<div>✉️ ${UI.escapeHtml(co.email)}</div>`   : ""}
@@ -773,6 +776,10 @@
             <input type="month" class="form-control" id="cm-since" value="${co ? co.since || "" : ""}" />
           </div>
         </div>
+        <div class="form-group">
+          <label class="form-label">Duração do contrato</label>
+          <input type="text" class="form-control" id="cm-contract-duration" value="${co ? UI.escapeHtml(co.contractDuration || "") : ""}" placeholder="Ex: 12 meses, 1 ano, indeterminado" />
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" id="cm-cancel">Cancelar</button>
@@ -792,7 +799,8 @@
         email:   overlay.querySelector("#cm-email").value.trim(),
         phone:   overlay.querySelector("#cm-phone").value.trim(),
         since:   overlay.querySelector("#cm-since").value,
-        status:  overlay.querySelector("#cm-status").value
+        status:  overlay.querySelector("#cm-status").value,
+        contractDuration: overlay.querySelector("#cm-contract-duration").value.trim()
       };
       if (isNew) {
         DB.Companies.create(payload);
