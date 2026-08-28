@@ -22,6 +22,7 @@
     status: "",
     priority: "",
     assignee: "",
+    company: "",
     sort: "dueDate",
     showArchived: false
   };
@@ -50,6 +51,7 @@
     if (state.status) tasks = tasks.filter((t) => t.status === state.status);
     if (state.priority) tasks = tasks.filter((t) => t.priority === state.priority);
     if (state.assignee) tasks = tasks.filter((t) => t.assignee === state.assignee);
+    if (state.company) tasks = tasks.filter((t) => t.companyId === state.company);
 
     const priorityOrder = { urgente: 0, alta: 1, media: 2, baixa: 3 };
     tasks.sort((a, b) => {
@@ -75,6 +77,7 @@
     const tasks = getFilteredTasks(ctx);
     const isAdmin = DB.canManageTasks(ctx.user);
     const users = DB.Users.list();
+    const companies = DB.Companies.list();
 
     const filtersHtml = `
       <div class="filters-bar">
@@ -92,6 +95,14 @@
             ? `<select id="f-assignee">
                 <option value="">Todos os responsáveis</option>
                 ${users.map((u) => `<option value="${u.id}" ${state.assignee === u.id ? "selected" : ""}>${u.name}</option>`).join("")}
+              </select>`
+            : ""
+        }
+        ${
+          companies.length
+            ? `<select id="f-company">
+                <option value="">Todas as empresas</option>
+                ${companies.map((c) => `<option value="${c.id}" ${state.company === c.id ? "selected" : ""}>${UI.escapeHtml(c.name)}</option>`).join("")}
               </select>`
             : ""
         }
@@ -194,6 +205,8 @@
     container.querySelector("#f-priority").addEventListener("change", (e) => { state.priority = e.target.value; reRender(); });
     const assigneeEl = container.querySelector("#f-assignee");
     if (assigneeEl) assigneeEl.addEventListener("change", (e) => { state.assignee = e.target.value; reRender(); });
+    const companyEl = container.querySelector("#f-company");
+    if (companyEl) companyEl.addEventListener("change", (e) => { state.company = e.target.value; reRender(); });
     container.querySelector("#f-sort").addEventListener("change", (e) => { state.sort = e.target.value; reRender(); });
     container.querySelector("#f-archived").addEventListener("change", (e) => { state.showArchived = e.target.checked; reRender(); });
 
