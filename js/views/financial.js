@@ -227,7 +227,9 @@
             <div class="card-pad">
               <div class="flex items-center justify-between" style="margin-bottom:8px;">
                 <div class="flex items-center gap-2">
-                  <div class="avatar" style="width:38px;height:38px;background:var(--color-primary-light);color:var(--color-primary);font-weight:700;font-size:13px;border-radius:10px;display:flex;align-items:center;justify-content:center;">${initials}</div>
+                  ${co.photo
+                    ? `<div class="avatar" style="width:38px;height:38px;border-radius:10px;overflow:hidden;"><img src="${co.photo}" alt="${UI.escapeHtml(co.name)}" style="width:100%;height:100%;object-fit:cover;" /></div>`
+                    : `<div class="avatar" style="width:38px;height:38px;background:var(--color-primary-light);color:var(--color-primary);font-weight:700;font-size:13px;border-radius:10px;display:flex;align-items:center;justify-content:center;">${initials}</div>`}
                   <div>
                     <div style="font-weight:700;line-height:1.2;">${UI.escapeHtml(co.name)}${newBadge}</div>
                     <div class="text-sm text-muted">${UI.escapeHtml(co.cnpj || "")}</div>
@@ -739,6 +741,21 @@
         <button class="modal-close" id="cm-close">✕</button>
       </div>
       <div class="modal-body">
+        <div class="flex items-center gap-3" style="margin-bottom:18px;">
+          <div id="cm-photo-wrap">${co && co.photo
+            ? `<div class="avatar avatar-lg"><img src="${co.photo}" alt="${UI.escapeHtml(co.name)}" /></div>`
+            : `<div class="avatar avatar-lg">${UI.escapeHtml(co ? co.name.split(" ").slice(0, 2).map((p) => p[0]).join("").toUpperCase() : "?")}</div>`}</div>
+          <div>
+            <div class="flex gap-2">
+              <label class="btn btn-secondary" style="cursor:pointer; padding:6px 12px; font-size:12px;">
+                Trocar foto
+                <input type="file" accept="image/*" id="cm-photo-input" style="display:none;" />
+              </label>
+              <button type="button" class="btn btn-ghost" id="cm-remove-photo" style="padding:6px 12px; font-size:12px; ${co && co.photo ? "" : "display:none;"}">Remover foto</button>
+            </div>
+            <div class="text-sm text-muted" style="margin-top:6px;">Logo ou foto da empresa (opcional, máx. 3MB).</div>
+          </div>
+        </div>
         <div class="form-row">
           <div class="form-group" style="flex:2;">
             <label class="form-label">Razão social *</label>
@@ -786,9 +803,37 @@
         <button class="btn btn-primary" id="cm-save">${isNew ? "Cadastrar Empresa" : "Salvar Alterações"}</button>
       </div>`;
 
+    let photoDataUrl = co ? co.photo || null : null;
+
     const overlay = UI.showModal(html, { static: true });
     overlay.querySelector("#cm-close").addEventListener("click", UI.hideModal);
     overlay.querySelector("#cm-cancel").addEventListener("click", UI.hideModal);
+
+    function renderPhotoPreview() {
+      const initials = UI.escapeHtml(overlay.querySelector("#cm-name").value.trim().split(" ").slice(0, 2).map((p) => p[0]).join("").toUpperCase() || "?");
+      overlay.querySelector("#cm-photo-wrap").innerHTML = photoDataUrl
+        ? `<div class="avatar avatar-lg"><img src="${photoDataUrl}" alt="" /></div>`
+        : `<div class="avatar avatar-lg">${initials}</div>`;
+      overlay.querySelector("#cm-remove-photo").style.display = photoDataUrl ? "" : "none";
+    }
+
+    overlay.querySelector("#cm-photo-input").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (!file.type.startsWith("image/")) { UI.toast("Selecione um arquivo de imagem.", "error"); return; }
+      if (file.size > 3 * 1024 * 1024) { UI.toast("Imagem muito grande (máx. 3MB).", "error"); return; }
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        photoDataUrl = ev.target.result;
+        renderPhotoPreview();
+      };
+      reader.readAsDataURL(file);
+    });
+    overlay.querySelector("#cm-remove-photo").addEventListener("click", () => {
+      photoDataUrl = null;
+      renderPhotoPreview();
+    });
+
     overlay.querySelector("#cm-save").addEventListener("click", () => {
       const name = overlay.querySelector("#cm-name").value.trim();
       if (!name) { UI.toast("Informe o nome da empresa.", "error"); return; }
@@ -800,7 +845,8 @@
         phone:   overlay.querySelector("#cm-phone").value.trim(),
         since:   overlay.querySelector("#cm-since").value,
         status:  overlay.querySelector("#cm-status").value,
-        contractDuration: overlay.querySelector("#cm-contract-duration").value.trim()
+        contractDuration: overlay.querySelector("#cm-contract-duration").value.trim(),
+        photo:   photoDataUrl
       };
       if (isNew) {
         DB.Companies.create(payload);
