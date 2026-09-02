@@ -69,6 +69,14 @@
     return u ? u.name : "—";
   }
 
+  function statusSelectHtml(t) {
+    const cls = DB.Tasks.isOverdue(t) ? "atrasada" : t.status;
+    const options = Object.entries(STATUS_LABELS)
+      .map(([k, v]) => `<option value="${k}" ${t.status === k ? "selected" : ""}>${v}</option>`)
+      .join("");
+    return `<select class="badge badge-${cls} status-select" data-status-id="${t.id}" onclick="event.stopPropagation();">${options}</select>`;
+  }
+
   /* ------------------------------------------------------------------ */
   /* Renderização da listagem                                           */
   /* ------------------------------------------------------------------ */
@@ -121,7 +129,6 @@
     const rowsHtml = tasks.length
       ? tasks
           .map((t) => {
-            const overdue = DB.Tasks.isOverdue(t);
             const checklistDone = (t.checklist || []).filter((c) => c.done).length;
             return `
             <tr data-id="${t.id}" class="task-row" style="cursor:pointer;">
@@ -139,7 +146,7 @@
                 </div>
               </td>
               <td>${badge("priority", t.priority)}</td>
-              <td>${overdue ? badge("status", "atrasada") : badge("status", t.status)}</td>
+              <td>${statusSelectHtml(t)}</td>
               <td class="text-sm">${UI.formatDate(t.dueDate)}</td>
               <td class="text-sm">${checklistDone}/${(t.checklist || []).length}</td>
               <td>
@@ -216,6 +223,14 @@
 
     container.querySelectorAll(".task-row").forEach((row) => {
       row.addEventListener("click", () => openTaskModal(ctx, row.dataset.id, reRender));
+    });
+
+    container.querySelectorAll("[data-status-id]").forEach((sel) => {
+      sel.addEventListener("change", (e) => {
+        DB.Tasks.update(sel.dataset.statusId, { status: e.target.value });
+        UI.toast("Status atualizado.", "success");
+        reRender();
+      });
     });
 
     container.querySelectorAll("[data-act]").forEach((btn) => {

@@ -269,6 +269,17 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 .badge-concluida { background: var(--color-success-light); color: var(--color-success); }
 .badge-atrasada { background: var(--color-danger-light); color: var(--color-danger); }
 
+.status-select {
+  border: none;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+.status-select:hover { filter: brightness(0.95); }
+.status-select:focus { outline: 2px solid var(--color-primary); outline-offset: 1px; }
+
 .tag-pill {
   display: inline-flex;
   align-items: center;
