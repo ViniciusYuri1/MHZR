@@ -34,7 +34,7 @@
 
   function getFilteredTasks(ctx) {
     let tasks = DB.Tasks.list({
-      assignee: DB.canManageTasks(ctx.user) ? undefined : ctx.user.id,
+      assignee: DB.canSeeAllTasks(ctx.user) ? undefined : ctx.user.id,
       includeArchived: state.showArchived
     });
     if (state.showArchived) tasks = tasks.filter((t) => t.archived);
@@ -76,6 +76,7 @@
   function renderList(container, ctx) {
     const tasks = getFilteredTasks(ctx);
     const isAdmin = DB.canManageTasks(ctx.user);
+    const canSeeAll = DB.canSeeAllTasks(ctx.user);
     const users = DB.Users.list();
     const companies = DB.Companies.list();
 
@@ -91,7 +92,7 @@
           ${Object.entries(PRIORITY_LABELS).map(([k, v]) => `<option value="${k}" ${state.priority === k ? "selected" : ""}>${v}</option>`).join("")}
         </select>
         ${
-          isAdmin
+          canSeeAll
             ? `<select id="f-assignee">
                 <option value="">Todos os responsáveis</option>
                 ${users.map((u) => `<option value="${u.id}" ${state.assignee === u.id ? "selected" : ""}>${u.name}</option>`).join("")}

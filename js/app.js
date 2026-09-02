@@ -85,7 +85,7 @@
   }
 
   function renderNotifications() {
-    const tasks = DB.Tasks.list({ assignee: DB.canManageTasks(user) ? undefined : user.id });
+    const tasks = DB.Tasks.list({ assignee: DB.canSeeAllTasks(user) ? undefined : user.id });
     const overdue = tasks.filter((t) => DB.Tasks.isOverdue(t));
     const dueSoon = tasks.filter((t) => {
       if (t.status === "concluida") return false;

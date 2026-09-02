@@ -42,7 +42,8 @@
 
   function render(container, ctx) {
     const canManage = DB.canManageTasks(ctx.user);
-    const tasks = DB.Tasks.list({ assignee: canManage ? undefined : ctx.user.id });
+    const canSeeAll = DB.canSeeAllTasks(ctx.user);
+    const tasks = DB.Tasks.list({ assignee: canSeeAll ? undefined : ctx.user.id });
 
     container.innerHTML = `
       <div class="page-header">

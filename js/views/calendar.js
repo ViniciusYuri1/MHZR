@@ -16,7 +16,7 @@
   }
 
   function tasksForScope(ctx) {
-    return DB.Tasks.list({ assignee: DB.canManageTasks(ctx.user) ? undefined : ctx.user.id });
+    return DB.Tasks.list({ assignee: DB.canSeeAllTasks(ctx.user) ? undefined : ctx.user.id });
   }
 
   function pillHtml(task) {

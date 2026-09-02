@@ -290,6 +290,13 @@
     return !!user && (user.role === "admin" || (user.permissions || []).includes("tasks:manage"));
   }
 
+  /* Diferente de canManageTasks: só o admin enxerga tarefas/estatísticas de
+     TODOS os funcionários. Funcionário 2 gerencia tarefas com poderes de
+     admin, mas continua restrito às próprias tarefas em listas e relatórios. */
+  function canSeeAllTasks(user) {
+    return !!user && user.role === "admin";
+  }
+
   function requireSession(redirectTo) {
     const user = getCurrentUser();
     if (!user) {
@@ -975,6 +982,7 @@
     getCurrentUser,
     isAdmin,
     canManageTasks,
+    canSeeAllTasks,
     requireSession,
     Users,
     Teams,
