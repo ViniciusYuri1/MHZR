@@ -123,7 +123,12 @@
         const task = DB.Tasks.get(taskId);
         if (task && task.status !== newStatus) {
           DB.Tasks.update(taskId, { status: newStatus });
-          UI.toast("Status atualizado para " + COLUMNS.find((c) => c.status === newStatus).label, "success");
+          UI.toast(
+            newStatus === "concluida"
+              ? "Tarefa concluída e arquivada."
+              : "Status atualizado para " + COLUMNS.find((c) => c.status === newStatus).label,
+            "success"
+          );
         }
         render(container, ctx);
       });

@@ -23,7 +23,7 @@
   const PRIORITY_LABELS = { baixa: "Baixa", media: "Média", alta: "Alta", urgente: "Urgente" };
 
   function scopedTasks(ctx) {
-    return DB.Tasks.list({ assignee: DB.canSeeAllTasks(ctx.user) ? undefined : ctx.user.id });
+    return DB.Tasks.list({ assignee: DB.canSeeAllTasks(ctx.user) ? undefined : ctx.user.id, includeArchived: true });
   }
 
   function statCardsHtml(ctx) {

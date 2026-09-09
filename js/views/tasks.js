@@ -227,8 +227,9 @@
 
     container.querySelectorAll("[data-status-id]").forEach((sel) => {
       sel.addEventListener("change", (e) => {
-        DB.Tasks.update(sel.dataset.statusId, { status: e.target.value });
-        UI.toast("Status atualizado.", "success");
+        const newStatus = e.target.value;
+        DB.Tasks.update(sel.dataset.statusId, { status: newStatus });
+        UI.toast(newStatus === "concluida" ? "Tarefa concluída e arquivada." : "Status atualizado.", "success");
         reRender();
       });
     });

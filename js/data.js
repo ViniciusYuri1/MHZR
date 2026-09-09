@@ -562,6 +562,13 @@
     update(id, patch) {
       const task = db.tasks.find((t) => t.id === id);
       if (!task) return null;
+
+      /* Concluir arquiva automaticamente; reabrir uma tarefa concluída desarquiva */
+      if (patch.status && patch.status !== task.status && patch.archived === undefined) {
+        if (patch.status === "concluida") patch.archived = true;
+        else if (task.status === "concluida" && task.archived) patch.archived = false;
+      }
+
       Object.assign(task, patch, { updatedAt: todayISO() });
       pushRow("tasks", task);
       const tCo = task.companyId ? (db.companies || []).find((c) => c.id === task.companyId) : null;
@@ -720,7 +727,7 @@
 
   const Stats = {
     overview() {
-      const tasks = db.tasks.filter((t) => !t.archived);
+      const tasks = db.tasks;
       const total = tasks.length;
       const concluded = tasks.filter((t) => t.status === "concluida").length;
       const inProgress = tasks.filter((t) => t.status === "em_andamento").length;
@@ -731,7 +738,7 @@
     },
     tasksByStatus() {
       const statuses = ["backlog", "nao_iniciada", "em_andamento", "em_revisao", "concluida"];
-      const tasks = db.tasks.filter((t) => !t.archived);
+      const tasks = db.tasks;
       return statuses.map((s) => ({
         status: s,
         count: tasks.filter((t) => t.status === s).length
@@ -739,7 +746,7 @@
     },
     tasksByPriority() {
       const priorities = ["baixa", "media", "alta", "urgente"];
-      const tasks = db.tasks.filter((t) => !t.archived);
+      const tasks = db.tasks;
       return priorities.map((p) => ({
         priority: p,
         count: tasks.filter((t) => t.priority === p).length
@@ -747,7 +754,7 @@
     },
     tasksPerUser() {
       return db.users.map((u) => {
-        const userTasks = db.tasks.filter((t) => t.assignee === u.id && !t.archived);
+        const userTasks = db.tasks.filter((t) => t.assignee === u.id);
         const concluded = userTasks.filter((t) => t.status === "concluida").length;
         return {
           userId: u.id,
